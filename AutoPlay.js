@@ -19,11 +19,8 @@ autoPlay = function(){
 	autoCraftPerc("slab",25);
 	autoCraftPerc("plate",25);
 	autoCraftAll("wood");
-	var finishedStage=true;
 	goals.resetCraftVals();
 	for(var i in goals.res){
-		if(!goals.metGoal(goals.res[i].name))
-			finishedStage=false;
 		if(goals.res[i].type=="resource"){
 			if(gamePage.resPool.get(goals.res[i].name).value<goals.getGoal(goals.res[i].name))
 				autoCraftMin(goals.res[i].name);
@@ -35,42 +32,12 @@ autoPlay = function(){
 		if(goals.res[i].type=="space" && !goals.metGoal(i))
 			autoClick(goals.res[i].name,"space",goals.getMaxGoal(i))
 	}
-	if(finishedStage){
-		goals.stage+=1;
-		setStageGoals(goals.stage);
-	}
 	if(gamePage.calendar.observeBtn)
 		gamePage.calendar.observeHandler();
 }
 
-setStageGoals = function(stage){
-	var maxStage = 4;
-	switch(stage){
-		case 1:
-			goals.setGoal("field",-1);
-			goals.setGoal("hut",1);
-			goals.setGoal("library",-1);
-			goals.setGoal("calendar",1);
-			goals.setGoal("agriculture",1);
-			break;
-		case 2:
-			goals.setGoal("hut",-1);
-			goals.setGoal("barn",-1);
-			goals.setGoal("archery",1);
-		case 3:
-			for(var i in goals.res)
-				if(goals.res[i].type=="science" || goals.res[i].type=="workshop")
-					goals.setGoal(goals.res[i].name,1);
-			break;
-		default:
-			goals.stage=maxStage;
-			break;
-	}
-}
-
 goals = {
 	initialized: false,
-	stage: 1,
 	res: {},
 	setup: function(){
 		for(var i in gamePage.resPool.resources)
@@ -97,7 +64,7 @@ goals = {
 				name=name+"2";
 			this.res[name]={
 				name: gamePage.science.techs[i].name,
-				val: 0,
+				val: 1,
 				type: "science"
 			};
 		}
@@ -107,7 +74,7 @@ goals = {
 				name=name+"3";
 			this.res[name]={
 				name: gamePage.workshop.meta[0].meta[i].name,
-				val: 0,
+				val: 1,
 				type: "workshop"
 			};
 		}
@@ -123,6 +90,7 @@ goals = {
 				};
 			}
 		}
+		this.res.field.val=1;
 		this.initialized=true;
 	},
 	getGoal: function(resource){

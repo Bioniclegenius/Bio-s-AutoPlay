@@ -181,6 +181,8 @@ goals = {
 		return true;
 	},
 	resetCraftVals: function(){
+		if(!this.initialized)
+			this.setup();
 		for(var i in this.res){
 			if(this.res[i].type=="resource")
 				this.res[i].craftVal=0;
@@ -261,6 +263,8 @@ goals = {
 		}
 	},
 	getMaxGoal: function(resource){
+		if(!this.initialized)
+			this.setup();
 		if(this.res[resource]==undefined)
 			return 0;
 		var val=this.res[resource].val;
@@ -423,7 +427,7 @@ autoClick = function(buttonName,tabName="bonfire",goal=0){
 							if(btns[button].model.name!=undefined){
 								console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
 								if(tab!=0)
-									console.log("\t"+btns[button].model.description.replace("<br>","\n"))
+									console.log("\t"+btns[button].model.description.replace("<br>","\n\t"))
 							}
 						}
 					});

@@ -20,6 +20,7 @@ autoPlay = function(){
 	autoCraftPerc("plate",25);
 	autoCraftAll("wood");
 	goals.resetCraftVals();
+	extraHook();
 	for(var i in goals.res){
 		if(goals.res[i].type=="resource"){
 			if(gamePage.resPool.get(goals.res[i].name).value<goals.getGoal(goals.res[i].name))
@@ -29,11 +30,14 @@ autoPlay = function(){
 			autoClick(goals.res[i].name,"science");
 		if(goals.res[i].type=="workshop" && !goals.metGoal(i))
 			autoClick(goals.res[i].name,"workshop");
-		if(goals.res[i].type=="space" && !goals.metGoal(i))
+		if(goals.res[i].type=="space" && gamePage.space.getBuilding(goals.res[i].name).val<goals.getGoal(i))
 			autoClick(goals.res[i].name,"space",goals.getMaxGoal(i))
 	}
 	if(gamePage.calendar.observeBtn)
 		gamePage.calendar.observeHandler();
+}
+
+extraHook = function(){
 }
 
 goals = {
@@ -203,8 +207,8 @@ goals = {
 								};
 								price.val=Math.ceil(price.val*1000)/1000;
 								if(gamePage.workshop.getCraft(price.name)!=null&&blacklist.indexOf(price.name)==-1)
-									if(this.getGoal(price.name)<price.val&&this.res[price.name].val>=0){
-										this.res[price.name].craftVal=price.val;
+									if(this.getGoal(price.name)-this.getRealGoal(price.name)<price.val&&this.res[price.name].val>=0){
+										this.res[price.name].craftVal=price.val+this.getRealGoal(price.name);
 										changed=true;
 									}
 							}
@@ -215,17 +219,31 @@ goals = {
 					if(this.getGoal(i)>gamePage.bld.getBuildingExt(this.res[i].name).meta.val){
 						var prices=gamePage.bld.getPrices(this.res[i].name);
 						if(prices!=null){
+							var canBuild=true;
 							for(var j in prices){
 								var price={
 									name: prices[j].name,
 									val: prices[j].val
 								};
-								price.val=Math.ceil(price.val*1000)/1000;
-								if(gamePage.workshop.getCraft(price.name)!=null&&blacklist.indexOf(price.name)==-1)
-									if(this.getGoal(price.name)<price.val&&this.res[price.name].val>=0){
-										this.res[price.name].craftVal=price.val;
-										changed=true;
+								if(gamePage.resPool.get(price.name)!=null)
+									if(price.val>gamePage.resPool.get(price.name).maxValue&&gamePage.resPool.get(price.name).maxValue>0){
+										canBuild=false;
+										break;
 									}
+							}
+							if(canBuild){
+								for(var j in prices){
+									var price={
+										name: prices[j].name,
+										val: prices[j].val
+									};
+									price.val=Math.ceil(price.val*1000)/1000;
+									if(gamePage.workshop.getCraft(price.name)!=null&&blacklist.indexOf(price.name)==-1)
+										if(this.getGoal(price.name)<price.val&&this.res[price.name].val>=0){
+											this.res[price.name].craftVal=price.val;
+											changed=true;
+										}
+								}
 							}
 						}
 					}

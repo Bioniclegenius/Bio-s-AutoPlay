@@ -226,7 +226,7 @@ goals = {
 									val: prices[j].val
 								};
 								if(gamePage.resPool.get(price.name)!=null)
-									if(price.val>gamePage.resPool.get(price.name).maxValue&&gamePage.resPool.get(price.name).maxValue>0){
+									if(price.val>gamePage.resPool.get(price.name).maxValue&&gamePage.resPool.get(price.name).maxValue>0&&price.val>gamePage.resPool.get(price.name).value){
 										canBuild=false;
 										break;
 									}

@@ -49,9 +49,11 @@ autoPlay = function(){
             autoClick(goals.res[i].name,"religion",goals.getMaxGoal(i));
         if(goals.res[i].type=="special"){
             if(goals.res[i].name=="feedLevi"){
-                if(goals.getGoal(i)!=0 && gamePage.diplomacy.get("leviathans").unlocked && gamePage.resPool.get("necrocorn").value>=1)
-					if(gamePage.diplomacy.get("leviathans").energy<30)
+                if(goals.getGoal(i)!=0 && gamePage.diplomacy.get("leviathans").unlocked && gamePage.resPool.get("necrocorn").value>=1){
+					var energyCap = gamePage.religion.getZU("marker").val * 5 + 5;
+					if(gamePage.diplomacy.get("leviathans").energy < energyCap)
 						gamePage.diplomacy.feedElders();
+				}
             }
 			if(goals.res[i].name=="autoUnicorn"){
 				if(goals.getGoal(i)!=0){

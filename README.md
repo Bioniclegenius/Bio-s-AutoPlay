@@ -77,6 +77,8 @@ Viable categories:
 			- Same as autoHunt, but for praising when faith is full.
 		- autoShatter:
 			- If this is set to 1, it will automatically shatter a time crystal (if this is an available option) when chronoheat is 0. If set to 5, it will shatter 5 at a time when chronoheat is 0. If set to 0, it won't shatter any.
+		- log:
+			- This is enabled (set to 1) by default. If enabled, it will output various activities the script takes to the console. If disabled (set to 0) with "goals.setGoal("log",0);", it will leave the console log alone.
 
 ## For custom code injection:
 The script comes with a function called "customHook()". This is run every tick the script is run, right after craftVals are auto-calculated and right before anything is actually crafted. You may rewrite the "customHook" function with whatever code you would like. This will require Javascript knowledge. Here's an example I use casually:
@@ -89,3 +91,6 @@ The script comes with a function called "customHook()". This is run every tick t
 	}
 
 This one, when combined with eludium, thorium, and kerosene being set to -1, means they'll only be crafted when their requisite materials hit max value. It also locks the steamworks goal to the magneto goal, meaning I only have to change magnetos to get both up. It's handy for moving targets.
+
+## For the person interested in various game mechanics:
+I keep some personal notes and bits and pieces of code in the "Extra Notes" file. Feel free to use whatever pieces you want, but this is NOT for casual users. Don't copy the entire thing in, there are sections that aren't valid code or that are autoscript snippets for others that I wrote.

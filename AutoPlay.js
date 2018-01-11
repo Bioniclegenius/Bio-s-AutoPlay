@@ -38,7 +38,8 @@ autoPlay = function(){
                 maxTrade=Math.min(maxTrade,Math.floor(gamePage.resPool.get(buys[j].name).value/buys[j].val));
             if(maxTrade>=goals.getGoal(i) && goals.getGoal(i)!=0 && maxTrade > 0){
                 gamePage.diplomacy.tradeMultiple(gamePage.diplomacy.get(goals.res[i].name),maxTrade);
-                console.log("Traded with "+gamePage.diplomacy.get(goals.res[i].name).title+" "+maxTrade+" time"+(maxTrade!=1?"s":"")+".");
+				if(goals.getGoal("log") != 0)
+					console.log("Traded with "+gamePage.diplomacy.get(goals.res[i].name).title+" "+maxTrade+" time"+(maxTrade!=1?"s":"")+".");
             }
         }
         if(goals.res[i].type=="religion" && gamePage.religion.getRU(goals.res[i].name).val<goals.getGoal(i))
@@ -51,8 +52,11 @@ autoPlay = function(){
             if(goals.res[i].name=="feedLevi"){
                 if(goals.getGoal(i)!=0 && gamePage.diplomacy.get("leviathans").unlocked && gamePage.resPool.get("necrocorn").value>=1){
 					var energyCap = gamePage.religion.getZU("marker").val * 5 + 5;
-					if(gamePage.diplomacy.get("leviathans").energy < energyCap)
+					if(gamePage.diplomacy.get("leviathans").energy < energyCap){
 						gamePage.diplomacy.feedElders();
+						if(goals.getGoal("log") != 0)
+							console.log("Fed leviathans. New energy level: " + gamePage.diplomacy.get("leviathans").energy + "/" + energyCap);
+					}
 				}
             }
 			if(goals.res[i].name=="autoUnicorn"){
@@ -60,6 +64,8 @@ autoPlay = function(){
 					var buildings=["unicornPasture","unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"]
 					for(var j in buildings)
 						goals.setGoal(buildings[j],0);
+					if(getBestUniBuilding() == "ivoryTower")
+						getBestUniBuilding(true);
 					goals.setGoal(getBestUniBuilding(),-1);
 				}
 			}
@@ -209,7 +215,7 @@ goals = {
                 type: "resource",
                 craftVal: 0,
                 manVal: 0,
-                blacklisted: 0,
+                blacklisted: false,
                 autoCraftPerc: 0
             };
         for(var x in gamePage.bld.buildingGroups){
@@ -325,6 +331,11 @@ goals = {
 		this.res["autoShatter"]={
 			name: "autoShatter",
 			val: 0,
+			type: "special"
+		};
+		this.res["log"]={
+			name: "log",
+			val: 1,
 			type: "special"
 		};
         this.initialized=true;
@@ -763,9 +774,11 @@ autoClick = function(buttonName,tabName="bonfire",goal=0){
                         if(result){
                             btns[button].update();
                             if(btns[button].model.name!=undefined){
-                                console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
-                                if(tab!=0&&tab!=6)
-                                    console.log("\t"+btns[button].model.description.replace("<br>","\n\t"))
+								if(goals.getGoal("log") != 0){
+									console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
+									if(tab!=0&&tab!=6)
+										console.log("\t"+btns[button].model.description.replace("<br>","\n\t"))
+								}
                             }
                         }
                     });

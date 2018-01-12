@@ -9,6 +9,10 @@ extraHook = function(){
 		if(goals.getGoal("log")!=0)
 			console.log("Extended festival for 10 years.");
 	}
+	if((gamePage.bld.getBuildingExt("aiCore").meta.effects["aiLevel"] || 0) >= goals.getGoal("aiLevel"))
+		gamePage.space.getBuilding("entangler").on = gamePage.space.getBuilding("entangler").val;
+	else
+		gamePage.space.getBuilding("entangler").on = 0;
 }
 
 makeNiceString = function(num){
@@ -34,7 +38,8 @@ getCraftTime = function(resName,goal,log=false,returnString=true,numIndent=1){
 			var whatsLeft = goal > res.value ? goal - res.value : 0;
 			var timeLeft = whatsLeft / income;
 			if(log){
-				console.log(indent + resName + indeNt + "To go: " + (whatsLeft != 0 ? makeNiceString(whatsLeft) : "Done") + " | Time until goal: " + gamePage.toDisplaySeconds(timeLeft));
+				console.log(indent + resName + indeNt + "Needed: " + makeNiceString(goal) + indeNt + "To go: " + (whatsLeft != 0 ? makeNiceString(whatsLeft) : "Done")
+				+ " | Time until goal: " + gamePage.toDisplaySeconds(timeLeft));
 			}
 			if(returnString)
 				return gamePage.toDisplaySeconds(timeLeft);
@@ -43,7 +48,7 @@ getCraftTime = function(resName,goal,log=false,returnString=true,numIndent=1){
 		}
 		else{
 			if(log){
-				console.log(origIndent + resName + "\n" + indent + "To go: " + (res.value < goal ? makeNiceString(goal - res.value) : "0"));
+				console.log(origIndent + resName + "\n" + indent + "Needed: " + makeNiceString(goal) + "\n" + indent + "To go: " + (res.value < goal ? makeNiceString(goal - res.value) : "0"));
 			}
 			var prices = gamePage.workshop.getCraftPrice(resCraft);
 			var numToCraft = goal - res.value;
@@ -60,7 +65,7 @@ getCraftTime = function(resName,goal,log=false,returnString=true,numIndent=1){
 				}
 				else{
 					if(log){
-						console.log(indent + prices[i].name + indeNt + "To go: Done | Time until goal: 0")
+						console.log(indent + prices[i].name + indeNt + "Needed: " + makeNiceString(priceVal) + indeNt + "To go: Done | Time until goal: 0")
 					}
 				}
 			}

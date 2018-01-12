@@ -338,6 +338,11 @@ goals = {
 			val: 1,
 			type: "special"
 		};
+		this.res["aiLevel"]={
+			name: "aiLevel",
+			val: 0,
+			type: "special"
+		};
         this.initialized=true;
         this.res.field.val=1;
         this.res.wood.blacklisted=true;

@@ -3,6 +3,8 @@ extraHook = function(){
 	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-250));
 	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-1000));
 	goals.setGoal("steamworks",goals.getGoal("magneto"));
+	goals.setGoal("observatory",goals.getGoal("biolab"));
+	gamePage.bld.getBuildingExt("biolab").meta.on=0;
 	if(gamePage.calendar.festivalDays<=40000&&gamePage.resPool.get("manpower").value>=15000&&gamePage.resPool.get("culture").value>=50000&&gamePage.resPool.get("parchment").value>=25000){
 		var btn=gamePage.villageTab.festivalBtn;
 		btn.model.x10Link.handler(btn,callback=function(result){if(result)btn.update();});

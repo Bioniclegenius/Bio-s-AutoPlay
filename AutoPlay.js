@@ -50,7 +50,7 @@ autoPlay = function(){
             autoClick(goals.res[i].name,"religion",goals.getMaxGoal(i));
         if(goals.res[i].type=="special"){
             if(goals.res[i].name=="feedLevi"){
-                if(goals.getGoal(i)!=0 && gamePage.diplomacy.get("leviathans").unlocked && gamePage.resPool.get("necrocorn").value>=1){
+                if(goals.getGoal(i)!=0 && gamePage.diplomacy.get("leviathans").unlocked && gamePage.resPool.get("necrocorn").value >= goals.getGoal("necrocorn")+1){
 					var energyCap = gamePage.religion.getZU("marker").val * 5 + 5;
 					if(gamePage.diplomacy.get("leviathans").energy < energyCap){
 						gamePage.diplomacy.feedElders();
@@ -64,8 +64,8 @@ autoPlay = function(){
 					var buildings=["unicornPasture","unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"]
 					for(var j in buildings)
 						goals.setGoal(buildings[j],0);
-					if(getBestUniBuilding() == "ivoryTower")
-						getBestUniBuilding(true);
+											 
+							   
 					goals.setGoal(getBestUniBuilding(),-1);
 				}
 			}
@@ -192,7 +192,7 @@ getBestUniBuilding = function(log=false){
 				console.log("\tPrice: "+unicornPrice + " | Amortization: "+amorSeconds);
 			}
 			if(amor < bestAmoritization)
-				if(riftBonus > 0 || relBonus > religionRatio){
+				if(riftBonus > 0 || relBonus > religionRatio && unicornPrice > 0){
 					bestAmoritization = amor;
 					bestBuilding = btn.id;
 				}

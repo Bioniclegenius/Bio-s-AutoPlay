@@ -627,7 +627,30 @@ goals = {
             tempVal=this.res[resource].manVal;
         val=Math.max(val,tempVal);
         return val;
-    }
+    },
+	export: function(){
+		var str = "";
+		var toSave=[];
+		for(var i in goals.res){
+			if(goals.res[i].val!=0 || goals.res[i].blacklisted || goals.res[i].autoCraftPerc || goals.res[i].craftVal || goals.res[i].manVal)
+				toSave.push(i);
+		}
+		toSave.sort(function (a,b){return a.toLowerCase().localeCompare(b.toLowerCase())});
+		for(var i in toSave){
+			if(goals.res[ toSave[i] ].val!=0)
+				str += "\ngoals.res[\"" + toSave[i] + "\"].val = " + goals.res[ toSave[i] ].val + ";";
+			if(goals.res[ toSave[i] ].craftVal)
+				str += "\ngoals.res[\"" + toSave[i] + "\"].craftVal = " + goals.res[ toSave[i] ].craftVal + ";";
+			if(goals.res[ toSave[i] ].manVal)
+				str += "\ngoals.res[\"" + toSave[i] + "\"].manVal = " + goals.res[ toSave[i] ].manVal + ";";
+			if(goals.res[ toSave[i] ].autoCraftPerc)
+				str += "\ngoals.res[\"" + toSave[i] + "\"].autoCraftPerc = " + goals.res[ toSave[i] ].autoCraftPerc + ";";
+			if(goals.res[ toSave[i] ].blacklisted)
+				str += "\ngoals.res[\"" + toSave[i] + "\"].blacklisted = true;";
+		}
+		str += "\n";
+		return str;
+	}
 }
  
 autoFunc = function(resource){

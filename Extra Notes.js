@@ -56,18 +56,20 @@ getCraftTime = function(resName,goal,log=false,returnString=true,numIndent=1){
 			var numToCraft = goal - res.value;
 			numToCraft /= 1 + gamePage.getResCraftRatio({name:resName});
 			var longest = 0;
-			for(var i in prices){
-				var priceVal = prices[i].val * numToCraft;
-				var resPrice = gamePage.resPool.get(prices[i].name);
-				var priceTime = 0;
-				if(resPrice.value < priceVal){
-					var timeToGo = getCraftTime(prices[i].name,priceVal - resPrice.value,log,false,numIndent+1);
-					if(timeToGo > longest)
-						longest = timeToGo;
-				}
-				else{
-					if(log){
-						console.log(indent + prices[i].name + indeNt + "Needed: " + makeNiceString(priceVal) + indeNt + "To go: Done | Time until goal: 0")
+			if(numToCraft > 0){
+				for(var i in prices){
+					var priceVal = prices[i].val * numToCraft;
+					var resPrice = gamePage.resPool.get(prices[i].name);
+					var priceTime = 0;
+					if(resPrice.value < priceVal){
+						var timeToGo = getCraftTime(prices[i].name,priceVal - resPrice.value,log,false,numIndent+1);
+						if(timeToGo > longest)
+							longest = timeToGo;
+					}
+					else{
+						if(log){
+							console.log(indent + prices[i].name + indeNt + "Needed: " + makeNiceString(priceVal) + indeNt + "To go: Done | Time until goal: 0")
+						}
 					}
 				}
 			}
@@ -158,6 +160,29 @@ getRelicTime = function(goal,log=false){//Time until enough relics for goal
 getMockParagon = function(ratio,cost){ // ratio is paragon boost% in decimal form by sephiroths, cost is how much the next one costs. % is given like .05 if you had Malkuth, a 5% bonus.
 	var result = 20 * cost * (1 + ratio) + cost;//cost of the sephirot, ratio is the ratio before buying it (like .05 if you had Malkuth already)
 	return result;
+}
+
+getNecrocornTime = function(log=false){//true to also output necrocorns per second
+	var numAlicorns = gamePage.resPool.get("alicorn").value;
+	var curCorruption = gamePage.religion.corruption;
+	var corruptionRate = 1;
+	if(gamePage.resPool.get("necrocorn").value > 0)
+		corruptionRate = 0.25 * (1+ gamePage.getEffect("corruptionBoostRatio"));
+	corruptionRate *= gamePage.getEffect("corruptionRatio");
+	if(numAlicorns <= 0){
+		curCorruption = 0;
+		corruptionRate = 0;
+	}
+	if(log)
+		console.log("Current corruption rate: " + (corruptionRate * gamePage.getRateUI()) + "/sec");
+	return gamePage.toDisplaySeconds( (1 + corruptionRate - curCorruption) / (corruptionRate * gamePage.getRateUI()) );
+}
+
+getLeviChance = function(){//Odds of leviathans showing up per year
+	var numPyramids = gamePage.religion.getZU("blackPyramid").val;
+	var numMarkers = gamePage.religion.getZU("marker").val;
+	var chance = 35 * numPyramids * (1 + 0.1 * numMarkers) / 10;
+	return chance + "%";
 }
 
 //===========================================================================================

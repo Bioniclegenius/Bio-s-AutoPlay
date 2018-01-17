@@ -185,6 +185,13 @@ getLeviChance = function(){//Odds of leviathans showing up per year
 	return chance + "%";
 }
 
+getReligionProductionBonusCap = function(){
+	var transcendTier = gamePage.religion.getTranscendenceLevel();
+	var numObelisks = gamePage.religion.getTU("blackObelisk").val;
+	var result = 1000 * (transcendTier * numObelisks * .005 + 1);
+	return result + "%";
+}
+
 //===========================================================================================
 //Notes for functions to keep in mind
 //===========================================================================================

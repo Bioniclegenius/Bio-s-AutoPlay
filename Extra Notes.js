@@ -192,6 +192,186 @@ getReligionProductionBonusCap = function(){
 	return result + "%";
 }
 
+getPrices = function(bldName,bldType = undefined){
+	var prices = [];
+	var bld = undefined;
+	var type = bldType;
+	for(var i in gamePage.religion.zigguratUpgrades)//ziggurat unicorn buildings
+		if(gamePage.religion.zigguratUpgrades[i].name == bldName){
+			bld = gamePage.religion.zigguratUpgrades[i];
+			type = "ziggurat";
+		}
+	if(!bld || bldType == "religion")
+		for(var i in gamePage.religion.religionUpgrades)//religious upgrades
+			if(gamePage.religion.religionUpgrades[i].name == bldName){
+				bld = gamePage.religion.religionUpgrades[i];
+				type = "religion";
+			}
+	if(!bld || bldType == "transcend")
+		for(var i in gamePage.religion.transcendenceUpgrades)//cryptotheology
+			if(gamePage.religion.transcendenceUpgrades[i].name == bldName){
+				bld = gamePage.religion.transcendenceUpgrades[i];
+				type = "transcend";
+			}
+	if(!bld || bldType == "space")//space
+		for(var i in gamePage.space.meta)
+			for(var j in gamePage.space.meta[i].meta)
+				if(gamePage.space.meta[i].meta[j].name == bldName){
+					bld = gamePage.space.meta[i].meta[j];
+					type = "space";
+				}
+	if(!bld || bldType == "workshop")//workshop
+		for(var i in gamePage.workshop.meta[0].meta)
+			if(gamePage.workshop.meta[0].meta[i].name == bldName){
+				bld = gamePage.workshop.meta[0].meta[i];
+				type = "workshop";
+			}
+	if(!bld || bldType == "craft")//crafts
+		if(gamePage.workshop.getCraft(bldName)){
+			bld = gamePage.workshop.getCraft(bldName);
+			type = "craft";
+		}
+	if(!bld || bldType == "time")//time
+		for(var i in gamePage.time.meta)
+			for(var j in gamePage.time.meta[i].meta)
+				if(gamePage.time.meta[i].meta[j].name == bldName){
+					bld = gamePage.time.meta[i].meta[j];
+					type = "time";
+				}
+	if(!bld || bldType == "metaphysics")//metaphysics
+		for(var i in gamePage.prestige.meta[0].meta)
+			if(gamePage.prestige.meta[0].meta[i].name == bldName){
+				bld = gamePage.prestige.meta[0].meta[i];
+				type = "metaphysics";
+			}
+	if(!bld || bldType == "science")//science
+		for(var i in gamePage.science.metaCache)
+			if(gamePage.science.metaCache[i].name == bldName){
+				bld = gamePage.science.metaCache[i];
+				type = "science";
+			}
+	if(!bld || bldType == "trade")//trade
+		for(var i in gamePage.diplomacy.races)
+			if(gamePage.diplomacy.races[i].name == bldName){
+				bld = gamePage.diplomacy.races[i];
+				type = "trade";
+			}
+	if(!bld || bldType == "building")//bonfire buildings
+		if(gamePage.bld.getBuildingExt(bldName)){
+			prices = gamePage.bld.getPricesWithAccessor(gamePage.bld.getBuildingExt(bldName));
+			for(var i in prices)
+				prices[i].displayVal = gamePage.getDisplayValueExt(prices[i].val);
+			return prices;
+		}
+	if(bld){
+		for (var i = 0; i< (bld.prices ? bld.prices.length : bld.buys.length); i++){
+			prices.push({
+				val: (bld.prices? bld.prices[i].val : bld.buys[i].val) * Math.pow(bld.priceRatio || 1, bld.val || bld.value || 0),
+				name: (bld.prices? bld.prices[i].name : bld.buys[i].name)
+			});
+		}
+	}
+	if(type == "science" || type == "workshop")
+		prices = gamePage.village.getEffectLeader("scientist", prices);
+	if(type == "religion")
+		prices = gamePage.village.getEffectLeader("wise", prices);
+	if(type == "trade"){
+		var tempPrices = [];
+		for(var i in prices)
+			tempPrices.push(prices[i]);
+		prices = [];
+		prices.push({val: 50, name: "manpower"});
+		prices.push({val: 15, name: "gold"});
+		for(var i in tempPrices)
+			prices.push(tempPrices[i]);
+	}
+	for(var i in prices)
+		prices[i].displayVal = gamePage.getDisplayValueExt(prices[i].val);
+	return prices;
+}
+
+//===========================================================================================
+//WikiCookies
+//===========================================================================================
+
+addCookieRes = function(){
+	var cookie = {//res
+		name: "cookie",
+		title: "WikiCookie",
+		type: "rare",
+		visible: true,
+		calculatePerTick: false,
+		aiCanDestroy: false,
+		craftable: false,
+		transient: true,
+		persists: true,
+		value: 1,
+		unlocked: true,
+		refundable: false
+	};
+	gamePage.resPool.resources.push(cookie);
+	gamePage.resPool.resourceMap["cookie"] = cookie;
+	gamePage.console.filters["cookie"] = {//console
+		title: "WikiCookies",
+		enabled: true,
+		unlocked: false
+	};
+	for(var i in gamePage.bld.buildingGroups)//buildings
+		if(gamePage.bld.buildingGroups[i].name == "other")
+			gamePage.bld.buildingGroups[i].buildings.push("chatroom");
+	gamePage.bld.buildingsData.push({
+		name: "chatroom",
+		label: "IRC Catroom",
+		description: "Allowing kittens to talk to each other using the Internet Relay Cat",
+		unlockRatio: 0.3,
+		unlockable: true,
+		prices: [
+			{name: "cookie", val: 1}
+		],
+		priceRatio: 1.15,
+		on: 0,
+		val: 0,
+		effects: { },
+		earnCookie: function(amt = 1, cookiename = ""){
+			gamePage.resPool.get("cookie").unlocked=true;
+			gamePage.resPool.addResEvent("cookie",amt);
+			var earn = " earned ";
+			if(amt < 0){
+				earn = " lost ";
+				amt = Math.abs(amt);
+			}
+			if(cookiename != ""){
+				if(amt == 1)
+					gamePage.msg("You" + earn + "one " + cookiename + "!","","cookie");
+				else
+					gamePage.msg("You" + earn + amt + " " + cookiename + "s!","","cookie");
+			}
+			else{
+				if(amt == 1)
+					gamePage.msg("You" + earn + "a WikiCookie!","","cookie");
+				else
+					gamePage.msg("You" + earn + gamePage.getDisplayValueExt(amt) + " WikiCookies!","","cookie");
+			}
+		},
+		action: function(self, game){
+			var numDone = Math.random() * 10000;//1/10,000 odds per chatroom per tick
+			if(numDone <= self.on){
+				var numCookies = Math.floor(Math.random() * numDone * 2);
+				if(numCookies > self.on)
+					numCookies = self.on;
+				if(numCookies == 0){
+					var numLost = Math.floor(-1 * Math.random() * numDone + .5);
+				}
+				if(numCookies != 0)
+					self.earnCookie(numCookies);
+			}
+		},
+		flavor: "Trout? My favorite!"
+	});
+}
+
+addCookieRes();
+
 //===========================================================================================
 //Notes for functions to keep in mind
 //===========================================================================================

@@ -348,6 +348,7 @@ goals = {
         this.res.wood.blacklisted=true;
         this.res.beam.blacklisted=true;
         this.res.slab.blacklisted=true;
+		this.res.plate.blacklisted=true;
         this.setAutoCraft("wood",25);
         this.setAutoCraft("beam",25);
         this.setAutoCraft("slab",25);

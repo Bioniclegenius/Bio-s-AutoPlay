@@ -36,7 +36,9 @@ autoPlay = function(){
             var buys=gamePage.diplomacy.get(goals.res[i].name).buys;
             for(var j in buys)
                 maxTrade=Math.min(maxTrade,Math.floor(gamePage.resPool.get(buys[j].name).value/buys[j].val));
-            if(maxTrade>=goals.getGoal(i) && goals.getGoal(i)!=0 && maxTrade > 0){
+            if(maxTrade >= Math.abs(goals.getGoal(i)) && goals.getGoal(i)!=0 && maxTrade > 0){
+				if(maxTrade > Math.abs(goals.getGoal(i)) && goals.getGoal(i) < 0)
+					maxTrade = Math.abs(goals.getGoal(i));
                 gamePage.diplomacy.tradeMultiple(gamePage.diplomacy.get(goals.res[i].name),maxTrade);
 				if(goals.getGoal("log") != 0)
 					console.log("Traded with "+gamePage.diplomacy.get(goals.res[i].name).title+" "+maxTrade+" time"+(maxTrade!=1?"s":"")+".");

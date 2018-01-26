@@ -15,6 +15,10 @@ extraHook = function(){
 		gamePage.space.getBuilding("entangler").on = gamePage.space.getBuilding("entangler").val;
 	else
 		gamePage.space.getBuilding("entangler").on = 0;
+	if(gamePage.resPool.get("titanium").value < gamePage.resPool.get("titanium").maxValue)
+		goals.setGoal("zebras6",-1);
+	else
+		goals.setGoal("zebras6",0);
 }
 
 makeNiceString = function(num){
@@ -290,6 +294,34 @@ getPrices = function(bldName,bldType = undefined){
 	return prices;
 }
 
+getCelestialEventChance = function(){
+	var chanceRatio = 1;//calculating chance ratio for daily events
+	if(gamePage.prestige.getPerk("chronomancy").researched)
+		chanceRatio = 1.1;
+	chanceRatio *= gamePage.getEffect("timeRatio") * .25 + 1;
+	
+	var chance = 25;//calculating chance of celestial events per day
+	chance += gamePage.getEffect("starEventChance") * 10000;
+	chance *= chanceRatio;
+	if(gamePage.prestige.getPerk("astromancy").researched)
+		chance *= 2;
+	if(gamePage.bld.get("library").on <= 0)
+		chance = 0;
+	chance /= 100;//10,000 * 100% to bring it to percentages
+	
+	var autoChance = gamePage.getEffect("starAutoSuccessChance") * 100;//Auto-success chance
+	if(gamePage.prestige.getPerk("astromancy").researched)
+		autoChance *= 2;
+	if(gamePage.ironWill && autoChance < 25)
+		autoChance = 25;
+	if(gamePage.workshop.get("seti").researched && autoChance < 100)
+		autoChance = 100;
+	
+	var str = "Chance of celestial event per day: " + chance + "%\n ";
+	str += "Chance for auto-success of event: " + autoChance + "%";
+	return str;
+}
+
 //===========================================================================================
 //WikiCookies
 //===========================================================================================
@@ -319,6 +351,7 @@ addCookieRes = function(){
 	for(var i in gamePage.bld.buildingGroups)//buildings
 		if(gamePage.bld.buildingGroups[i].name == "other")
 			gamePage.bld.buildingGroups[i].buildings.push("chatroom");
+	gamePage.bld.cookieProgress = 0;
 	gamePage.bld.buildingsData.push({
 		name: "chatroom",
 		label: "IRC Catroom",
@@ -331,8 +364,94 @@ addCookieRes = function(){
 		priceRatio: 1.15,
 		on: 0,
 		val: 0,
-		effects: { },
+		effects: {
+			"inspiration": 0.0001,
+			"cookieProgress": 0
+		},
 		earnCookie: function(amt = 1, cookiename = ""){
+			if(cookiename == ""){
+				var names = {//odds for each resource - each has so many pieces of the pie. Adding more makes the pie larger.
+					"catnip": 1000,
+					"wood": 900,
+					"minerals": 700,
+					"coal": 400,
+					"iron": 500,
+					"titanium": 200,
+					"gold": 300,
+					"oil": 500,
+					"uranium": 75,
+					"unobtainium": 10,
+					"manpower": 900,
+					"science": 1000,
+					"culture": 1000,
+					"faith": 500,
+					"starchart": 1000,
+					"antimatter": 50,
+					"furs": 1000,
+					"ivory": 1000,
+					"spice": 1000,
+					"unicorns": 100,
+					"alicorns": 5,
+					"necrocorns": 1,
+					"tears": 25,
+					"timeCrystal": 5,
+					"relic": 2,
+					"void": 1,
+					"beam": 800,
+					"slab": 600,
+					"plate": 400,
+					"steel": 300,
+					"concrate": 200,
+					"gear": 200,
+					"alloy": 100,
+					"eludium": 5,
+					"scaffold": 700,
+					"ship": 300,
+					"tanker": 25,
+					"kerosene": 300,
+					"parchment": 800,
+					"manuscript": 600,
+					"compedium": 400,
+					"blueprint": 200,
+					"thorium": 10,
+					"megalith": 200
+				};
+				var total = 0;
+				for(var i in names){
+					if(!gamePage.resPool.get(i).unlocked){
+						odds = names[i];
+						if(odds <= 50)
+							odds = 0;
+						odds = Math.sqrt(odds);
+						odds /= 2;
+						odds = Math.floor(odds);
+						names[i] = odds;//allow potential to give you later resources, at a much reduced rate - anything under 25 initially won't get a chance
+					}
+					total += names[i];
+				}
+				var baseline = total;
+				total += baseline;
+				var which = Math.ceil(Math.random() * total);//spin the roulette wheel
+				if(which > baseline){
+					which -= baseline;
+					for(var i in names)
+						if(cookiename == ""){
+							if(which <= names[i])
+								cookiename = i;
+							else
+								which -= names[i];
+						}
+				}
+			}
+			if(cookiename != ""){
+				var res = gamePage.resPool.get(cookiename);
+				if(res){
+					cookiename = res.title;
+					gamePage.resPool.addResEvent(res.name,amt);
+				}
+				if(cookiename != "")
+					cookiename += " cookie";
+			}
 			gamePage.resPool.get("cookie").unlocked=true;
 			gamePage.resPool.addResEvent("cookie",amt);
 			var earn = " earned ";
@@ -354,20 +473,31 @@ addCookieRes = function(){
 			}
 		},
 		action: function(self, game){
-			var numDone = Math.random() * 10000;//1/10,000 odds per chatroom per tick
-			if(numDone <= self.on){
-				var numCookies = Math.floor(Math.random() * numDone * 2);
-				if(numCookies > self.on)
-					numCookies = self.on;
-				if(numCookies == 0){
-					var numLost = Math.floor(-1 * Math.random() * numDone + .5);
-				}
-				if(numCookies != 0)
-					self.earnCookie(numCookies);
+			gamePage.bld.cookieProgress += self.effects["inspiration"] * self.on;
+			if(gamePage.bld.cookieProgress >= 1){
+				self.earnCookie(Math.floor(gamePage.bld.cookieProgress));
+				gamePage.bld.cookieProgress -= Math.floor(gamePage.bld.cookieProgress);
 			}
+			self.effects["progress"] = gamePage.bld.cookieProgress * 100;
 		},
 		flavor: "Trout? My favorite!"
 	});
+	gamePage.bld.getPricesWithAccessor = function(bld) {
+	 	var bldPrices = bld.get('prices');
+		var ratio = this.getPriceRatioWithAccessor(bld);
+
+		var prices = [];
+
+		for (var i = 0; i< bldPrices.length; i++){
+			prices.push({
+				val: bldPrices[i].val * Math.pow(ratio, bld.get('val')),
+				name: bldPrices[i].name
+			});
+			if(prices[prices.length - 1].name == "cookie")
+				prices[prices.length - 1].val = Math.ceil(prices[prices.length - 1].val);
+		}
+	    return prices;
+	 };
 }
 
 addCookieRes();

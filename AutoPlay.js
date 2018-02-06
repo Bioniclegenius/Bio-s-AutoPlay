@@ -102,6 +102,44 @@ autoPlay = function(){
 			}
         }
     }
+	var jobs = goals.getType("job");
+	for(var i in jobs){
+		if(goals.getMaxGoal(jobs[i].name) - gamePage.village.getJob(goals.res[jobs[i].name].name).value < 0)
+			gamePage.village.sim.removeJob(goals.res[jobs[i].name].name);
+	}
+	var freeKittens = gamePage.village.getFreeKittens();
+	if(freeKittens > 0){
+		jobs = goals.getType("job");
+		var maxdif = 1;
+		var chosenJob = [];
+		for(var i in jobs){
+			var dif = goals.getMaxGoal(jobs[i].name) - gamePage.village.getJob(goals.res[jobs[i].name].name).value;
+			if(dif == Infinity)
+				dif = 1;
+			if(dif > maxdif){
+				maxdif = dif;
+				chosenJob = [];
+				chosenJob.push(jobs[i].name);
+			}
+			else if(dif == maxdif)
+				chosenJob.push(jobs[i].name);
+		}
+		if(chosenJob.length > 1){
+			jobs = [];
+			for(var i in chosenJob)
+				jobs.push(chosenJob[i]);
+			var min = gamePage.village.getJob[goals.res[jobs[0]].name].value;
+			chosenJob = jobs[0];
+			for(var i in jobs)
+				if(gamePage.village.getJob[goals.res[jobs[i]].name].value < min){
+					min = gamePage.village.getJob[goals.res[jobs[i]].name].value;
+					chosenJob = jobs[i];
+				}
+			gamePage.village.assignJob(goals.res[chosenJob]);
+		}
+		else if(chosenJob.length == 1)
+			gamePage.village.assignJob(goals.res[chosenJob[0]]);
+	}
     if(gamePage.calendar.observeBtn)
         gamePage.calendar.observeHandler();
 }
@@ -211,7 +249,7 @@ goals = {
     res: {},
     setup: function(){
         for(var i in gamePage.resPool.resources)
-            this.res[gamePage.resPool.resources[i].name]={
+            this.res[gamePage.resPool.resources[i].name] = {
                 name: gamePage.resPool.resources[i].name,
                 val: 0,
                 type: "resource",
@@ -222,11 +260,11 @@ goals = {
             };
         for(var x in gamePage.bld.buildingGroups){
             for(var y in gamePage.bld.buildingGroups[x].buildings){
-                var bld=gamePage.bld.getBuildingExt(gamePage.bld.buildingGroups[x].buildings[y]);
-                var name=bld.meta.name;
-                if(this.res[name]!=null)
-                    name=name+"2";
-                this.res[name]={
+                var bld = gamePage.bld.getBuildingExt(gamePage.bld.buildingGroups[x].buildings[y]);
+                var name = bld.meta.name;
+                if(this.res[name] != null)
+                    name=name + "2";
+                this.res[name] = {
                     name: bld.meta.name,
                     val: 0,
                     type: "building"
@@ -234,20 +272,20 @@ goals = {
             }
         }
         for(var i in gamePage.science.techs){
-            var name=gamePage.science.techs[i].name;
-            if(this.res[name]!=null)
-                name=name+"3";
-            this.res[name]={
+            var name = gamePage.science.techs[i].name;
+            if(this.res[name] != null)
+                name=name + "3";
+            this.res[name] = {
                 name: gamePage.science.techs[i].name,
                 val: 0,
                 type: "science"
             };
         }
         for(var i in gamePage.workshop.meta[0].meta){
-            var name=gamePage.workshop.meta[0].meta[i].name;
-            if(this.res[name]!=null)
-                name=name+"4";
-            this.res[name]={
+            var name = gamePage.workshop.meta[0].meta[i].name;
+            if(this.res[name] != null)
+                name = name + "4";
+            this.res[name] = {
                 name: gamePage.workshop.meta[0].meta[i].name,
                 val: 0,
                 type: "workshop"
@@ -255,10 +293,10 @@ goals = {
         }
         for(var i in gamePage.space.meta){
             for(var j in gamePage.space.meta[i].meta){
-                var name=gamePage.space.meta[i].meta[j].name;
-                if(this.res[name]!=null)
-                    name=name+"5";
-                this.res[name]={
+                var name = gamePage.space.meta[i].meta[j].name;
+                if(this.res[name] != null)
+                    name = name + "5";
+                this.res[name] = {
                     name: gamePage.space.meta[i].meta[j].name,
                     val: 0,
                     type: "space"
@@ -266,125 +304,146 @@ goals = {
             }
         }
         for(var i in gamePage.diplomacy.races){
-            var name=gamePage.diplomacy.races[i].name;
-            if(this.res[name]!=null)
-                name=name+"6";
-            this.res[name]={
+            var name = gamePage.diplomacy.races[i].name;
+            if(this.res[name] != null)
+                name = name + "6";
+            this.res[name] = {
                 name: gamePage.diplomacy.races[i].name,
                 val: 0,
                 type: "trade"
             };
         }
         for(var i in gamePage.religion.religionUpgrades){
-            var name=gamePage.religion.religionUpgrades[i].name;
-            if(this.res[name]!=null)
-                name=name+"7";
-            this.res[name]={
+            var name = gamePage.religion.religionUpgrades[i].name;
+            if(this.res[name] != null)
+                name = name + "7";
+            this.res[name] = {
                 name: gamePage.religion.religionUpgrades[i].name,
                 val: 0,
                 type: "religion"
             };
         }
         for(var i in gamePage.religion.zigguratUpgrades){
-            var name=gamePage.religion.zigguratUpgrades[i].name;
-            if(this.res[name]!=null)
-                name=name+"8";
-            this.res[name]={
+            var name = gamePage.religion.zigguratUpgrades[i].name;
+            if(this.res[name] != null)
+                name = name + "8";
+            this.res[name] = {
                 name: gamePage.religion.zigguratUpgrades[i].name,
                 val: 0,
                 type: "ziggurat"
             };
         }
         for(var i in gamePage.religion.transcendenceUpgrades){
-            var name=gamePage.religion.transcendenceUpgrades[i].name;
-            if(this.res[name]!=null)
-                name=name+"9";
-            this.res[name]={
+            var name = gamePage.religion.transcendenceUpgrades[i].name;
+            if(this.res[name] != null)
+                name=name + "9";
+            this.res[name] = {
                 name: gamePage.religion.transcendenceUpgrades[i].name,
                 val: 0,
                 type: "transcend"
             };
         }
-        this.res["feedLevi"]={
+        for(var i in gamePage.village.jobs){
+            var name = gamePage.village.jobs[i].name;
+            if(this.res[name] != null)
+                name = name + "10";
+            this.res[name] = {
+                name: gamePage.village.jobs[i].name,
+                val: -1,
+                type: "job"
+            };
+        }
+        this.res["feedLevi"] = {
             name: "feedLevi",
             val: 0,
             type: "special"
         };
-        this.res["autoUnicorn"]={
+        this.res["autoUnicorn"] = {
             name: "autoUnicorn",
             val: 0,
             type: "special"
         };
-		this.res["autoHunt"]={
+		this.res["autoHunt"] = {
 			name: "autoHunt",
 			val: 0,
 			type: "special"
 		};
-		this.res["autoApoReset"]={
+		this.res["autoApoReset"] = {
 			name: "autoApoReset",
 			val: 0,
 			type: "special"
 		};
-		this.res["autoPraise"]={
+		this.res["autoPraise"] = {
 			name: "autoPraise",
 			val: 0,
 			type: "special"
 		};
-		this.res["autoShatter"]={
+		this.res["autoShatter"] = {
 			name: "autoShatter",
 			val: 0,
 			type: "special"
 		};
-		this.res["log"]={
+		this.res["log"] = {
 			name: "log",
-			val: 1,
+			val: 2,
 			type: "special"
 		};
-		this.res["aiLevel"]={
+		this.res["aiLevel"] = {
 			name: "aiLevel",
 			val: 0,
 			type: "special"
 		};
-        this.initialized=true;
-        this.res.field.val=1;
-        this.res.wood.blacklisted=true;
-        this.res.beam.blacklisted=true;
-        this.res.slab.blacklisted=true;
-		this.res.plate.blacklisted=true;
+        this.initialized = true;
+        this.res.field.val = 1;
+        this.res.wood.blacklisted = true;
+        this.res.beam.blacklisted = true;
+        this.res.slab.blacklisted = true;
+		this.res.plate.blacklisted = true;
         this.setAutoCraft("wood",25);
         this.setAutoCraft("beam",25);
         this.setAutoCraft("slab",25);
         this.setAutoCraft("plate",25);
     },
+	getType: function(type){
+		if(!this.initialized)
+			this.setup();
+		var types = [];
+		for(var i in this.res)
+			if(this.res[i].type == type)
+				types.push({name: i, val: this.res[i].val});
+		return types;
+	},
     getGoal: function(resource){
         if(!this.initialized)
             this.setup();
-        if(this.res[resource]!=undefined){
-            if(this.res[resource].type=="building" && this.res[resource].val==-1)
-                return gamePage.bld.getBuildingExt(resource).meta.val+1;
-            if(this.res[resource].type=="resource"){
-                var tempVal=this.res[resource].val;
-                if(this.res[resource].val==-1)
-                    tempVal=gamePage.resPool.get(resource).value+1;
-                if(tempVal<this.res[resource].craftVal)
-                    tempVal=this.res[resource].craftVal;
-                if(tempVal<this.res[resource].manVal)
-                    tempVal=this.res[resource].manVal;
+        if(this.res[resource] != undefined){
+            if(this.res[resource].type == "building" && this.res[resource].val == -1)
+                return gamePage.bld.getBuildingExt(resource).meta.val + 1;
+            if(this.res[resource].type == "resource"){
+                var tempVal = this.res[resource].val;
+                if(this.res[resource].val == -1)
+                    tempVal = gamePage.resPool.get(resource).value + 1;
+                if(tempVal < this.res[resource].craftVal)
+                    tempVal = this.res[resource].craftVal;
+                if(tempVal < this.res[resource].manVal)
+                    tempVal = this.res[resource].manVal;
                 return tempVal;
             }
-            if(this.res[resource].type=="science" && this.res[resource].val==-1)
+            if(this.res[resource].type == "science" && this.res[resource].val == -1)
                 return 1;
-            if(this.res[resource].type=="space" && this.res[resource].val==-1)
-                return gamePage.space.getBuilding(this.res[resource].name).val+1;
-            if(this.res[resource].type=="religion" && this.res[resource].val==-1){
-                if(gamePage.religion.getRU(this.res[resource].name).noStackable==true)
+            if(this.res[resource].type == "space" && this.res[resource].val == -1)
+                return gamePage.space.getBuilding(this.res[resource].name).val + 1;
+            if(this.res[resource].type == "religion" && this.res[resource].val == -1){
+                if(gamePage.religion.getRU(this.res[resource].name).noStackable)
                     return 1;
-                return gamePage.religion.getRU(this.res[resource].name).val+1;
+                return gamePage.religion.getRU(this.res[resource].name).val + 1;
             }
-            if(this.res[resource].type=="ziggurat" && this.res[resource].val==-1)
-                return gamePage.religion.getZU(this.res[resource].name).val+1;
-            if(this.res[resource].type=="transcend" && this.res[resource].val==-1)
-                return gamePage.religion.getTU(this.res[resource].name).val+1;
+            if(this.res[resource].type == "ziggurat" && this.res[resource].val == -1)
+                return gamePage.religion.getZU(this.res[resource].name).val + 1;
+            if(this.res[resource].type == "transcend" && this.res[resource].val == -1)
+                return gamePage.religion.getTU(this.res[resource].name).val + 1;
+			if(this.res[resource].type == "job" && this.res[resource].val == -1)
+				return gamePage.village.getJob(this.res[resource].name).value + 1;
             return this.res[resource].val;
         }
         return 0;
@@ -394,9 +453,9 @@ goals = {
             this.setup();
         if(this.res[resource]!=undefined){
             returnZero=['building','resource','science','space','ziggurat','transcend'];
-            if(returnZero.indexOf(this.res[resource].type)!=-1 && this.res[resource].val==-1)
+            if(returnZero.indexOf(this.res[resource].type) != -1 && this.res[resource].val == -1)
                 return 0;
-            if(this.res[resource].type=="religion" && this.res[resource].val==-1){
+            if(this.res[resource].type == "religion" && this.res[resource].val == -1){
                 if(gamePage.religion.getRU(this.res[resource].name).noStackable)
                     return 1;
                 return 0;
@@ -408,10 +467,10 @@ goals = {
     setGoal: function(resource,value){
         if(!this.initialized)
             this.setup();
-        if(this.res[resource]!=undefined)
-            this.res[resource].val=value;
-		if(resource=="autoUnicorn"){
-			var buildings=["unicornPasture","unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"]
+        if(this.res[resource] != undefined)
+            this.res[resource].val = value;
+		if(resource == "autoUnicorn"){
+			var buildings = ["unicornPasture","unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"]
 			for(var j in buildings)
 				goals.setGoal(buildings[j],0);
 		}
@@ -421,78 +480,85 @@ goals = {
         if(!this.initialized)
             this.setup();
         for(var i in this.res){
-            if(this.res[i].type==type)
+            if(this.res[i].type == type)
                 this.setGoal(i,value);
         }
     },
     metGoal: function(resource){
         if(!this.initialized)
             this.setup();
-        if(this.res[resource]!=undefined){
-            if(this.res[resource].type=="resource"){
-                if(gamePage.resPool.get(this.res[resource].name).value>=this.getRealGoal(resource))
+        if(this.res[resource] != undefined){
+            if(this.res[resource].type == "resource"){
+                if(gamePage.resPool.get(this.res[resource].name).value >= this.getRealGoal(resource))
                     return true;
                 return false;
             }
-            if(this.res[resource].type=="building"){
-                if(gamePage.bld.getBuildingExt(this.res[resource].name).meta.val>=this.res[resource].val)
+            if(this.res[resource].type == "building"){
+                if(gamePage.bld.getBuildingExt(this.res[resource].name).meta.val >= this.res[resource].val)
                     return true;
                 return false;
             }
-            if(this.res[resource].type=="science"){
-                if(this.res[resource].val>0){
+            if(this.res[resource].type == "science"){
+                if(this.res[resource].val > 0){
                     for(var i in gamePage.science.techs)
-                        if(gamePage.science.techs[i].name==this.res[resource].name)
+                        if(gamePage.science.techs[i].name == this.res[resource].name)
                             return gamePage.science.techs[i].researched;
                 }
                 return true;
             }
-            if(this.res[resource].type=="workshop"){
-                if(this.res[resource].val>0){
+            if(this.res[resource].type == "workshop"){
+                if(this.res[resource].val > 0){
                     for(var i in gamePage.workshop.meta[0].meta)
-                        if(gamePage.workshop.meta[0].meta[i].name==this.res[resource].name)
+                        if(gamePage.workshop.meta[0].meta[i].name == this.res[resource].name)
                             return gamePage.workshop.meta[0].meta[i].researched;
                 }
                 return true;
             }
-            if(this.res[resource].type=="space"){
-                if(this.res[resource].val>0){
-                    if(gamePage.space.getBuilding(this.res[resource].name).val<this.getRealGoal(resource))
+            if(this.res[resource].type == "space"){
+                if(this.res[resource].val > 0){
+                    if(gamePage.space.getBuilding(this.res[resource].name).val < this.getRealGoal(resource))
                         return false;
                 }
                 return true;
             }
-            if(this.res[resource].type=="religion"){
-                if(gamePage.religion.getRU(this.res[resource].name).val<this.getRealGoal(resource))
+            if(this.res[resource].type == "religion"){
+                if(gamePage.religion.getRU(this.res[resource].name).val < this.getRealGoal(resource))
                     return false;
                 return true;
             }
-            if(this.res[resource].type=="ziggurat"){
-                if(gamePage.religion.getZU(this.res[resource].name).val<this.getRealGoal(resource))
+            if(this.res[resource].type == "ziggurat"){
+                if(gamePage.religion.getZU(this.res[resource].name).val < this.getRealGoal(resource))
                     return false;
                 return true;
             }
-            if(this.res[resource].type=="transcend"){
-                if(gamePage.religion.getTU(this.res[resource].name).val<this.getRealGoal(resource))
+            if(this.res[resource].type == "transcend"){
+                if(gamePage.religion.getTU(this.res[resource].name).val < this.getRealGoal(resource))
                     return false;
                 return true;
             }
+			if(this.res[resource].type == "job"){
+				if(gamePage.village.getJob(this.res[resource].name).value < this.getRealGoal(resource))
+					return false;
+				return true;
+			}
         }
         return true;
     },
     setAutoCraft: function(resource,percent){
         if(!this.initialized)
             this.setup();
-        if(this.res[resource]!=undefined){
-            if(this.res[resource].type=="resource")
-                this.res[resource].autoCraftPerc=Math.max(Math.min(percent,100),0);
+        if(this.res[resource] != undefined){
+            if(this.res[resource].type == "resource"){
+                this.res[resource].autoCraftPerc = Math.max(Math.min(percent,100),0);
+				return this.res[resource];
+			}
         }
     },
     getAutoCraft: function(resource){
         if(!this.initialized)
             this.setup();
-        if(this.res[resource]!=undefined)
-            if(this.res[resource].type=="resource")
+        if(this.res[resource] != undefined)
+            if(this.res[resource].type == "resource")
                 return this.res[resource].autoCraftPerc;
         return 0;
     },
@@ -500,24 +566,24 @@ goals = {
         if(!this.initialized)
             this.setup();
         for(var i in this.res){
-            if(this.res[i].type=="resource")
-                this.res[i].craftVal=0;
+            if(this.res[i].type == "resource")
+                this.res[i].craftVal = 0;
         }
-        var changed=true;
+        var changed = true;
         while(changed){
-            changed=false;
+            changed = false;
             for(var i in this.res){
-                if(this.res[i].type=="resource"){
-                    if(this.getGoal(i)>gamePage.resPool.get(this.res[i].name).value){
-                        var craft=gamePage.workshop.getCraft(this.res[i].name);
-                        if(craft!=null){
+                if(this.res[i].type == "resource"){
+                    if(this.getGoal(i) > gamePage.resPool.get(this.res[i].name).value){
+                        var craft = gamePage.workshop.getCraft(this.res[i].name);
+                        if(craft != null){
                             for(var j in craft.prices){
-                                var price={
+                                var price = {
                                     name: craft.prices[j].name,
                                     val: craft.prices[j].val
                                 };
-                                price.val=Math.ceil(price.val*1000)/1000;
-                                if(gamePage.workshop.getCraft(price.name)!=null&&this.res[price.name].blacklisted==false)
+                                price.val = Math.ceil(price.val * 1000) / 1000;
+                                if(gamePage.workshop.getCraft(price.name) != null && this.res[price.name].blacklisted == false)
                                     if(this.getGoal(price.name)-this.getRealGoal(price.name)<price.val&&this.res[price.name].val>=0){
                                         this.res[price.name].craftVal=price.val+this.getRealGoal(price.name);
                                         changed=true;
@@ -806,7 +872,19 @@ autoClick = function(buttonName,tabName="bonfire",goal=0){
                             btns[button].update();
                             if(btns[button].model.name!=undefined){
 								if(goals.getGoal("log") != 0){
-									console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
+									if(goals.getGoal("log") == 2){
+										console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
+									}
+									else if(goals.getGoal("log") == 1){
+										var quantity = 0;
+										tabName = gamePage.tabs[tab].tabName.toLowerCase();
+										if(tabName == "bonfire" || tabName == "religion" || tabName == "space")
+											quantity = btns[button].model.metadata.val;
+										else if(tabName == "science" || tabName == "workshop")
+											quantity = (btns[button].model.metadata.researched ? 1 : 0);
+										if((quantity == goal && goal != 0) || goal <= 0 || goal == Infinity)
+											console.log(btns[button].model.name+" ("+gamePage.tabs[tab].tabName+")"+(goal!=0?" goal: "+goal:""));
+									}
 									if(tab!=0&&tab!=6)
 										console.log("\t"+btns[button].model.description.replace("<br>","\n\t"))
 								}

@@ -3,7 +3,7 @@ extraHook = function(){
 	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-250));
 	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-1000));
 	goals.setGoal("steamworks",goals.getGoal("magneto"));
-	goals.setGoal("observatory",goals.getGoal("biolab"));
+	//goals.setGoal("observatory",goals.getGoal("biolab"));
 	gamePage.bld.getBuildingExt("biolab").meta.on=0;
 	if(gamePage.calendar.festivalDays<=40000&&gamePage.resPool.get("manpower").value>=15000&&gamePage.resPool.get("culture").value>=50000&&gamePage.resPool.get("parchment").value>=25000){
 		var btn=gamePage.villageTab.festivalBtn;
@@ -15,10 +15,11 @@ extraHook = function(){
 		gamePage.space.getBuilding("entangler").on = gamePage.space.getBuilding("entangler").val;
 	else
 		gamePage.space.getBuilding("entangler").on = 0;
-	if(gamePage.resPool.get("titanium").value < gamePage.resPool.get("titanium").maxValue)
+	/*if(gamePage.resPool.get("titanium").value < gamePage.resPool.get("titanium").maxValue)
 		goals.setGoal("zebras6",-1);
 	else
-		goals.setGoal("zebras6",0);
+		goals.setGoal("zebras6",0);*/
+	goals.setGoal("autoApoReset",parseInt(getReligionProductionBonusCap())-10);
 }
 
 makeNiceString = function(num){
@@ -121,33 +122,28 @@ getBlueprintCraft = function(){//ALTERNATIVELY, just do 1 + gamePage.getResCraft
 	return finalResult; // How many blueprints you get per individual craft
 }
 
-getPraiseLoss = function(tier,perc){//tier as goal tier, perc as 100 for 100%. Returns how much is required, how much you'd have, how much you'd lose, and the % of the loss versus original.
+getPraiseLoss = function(tier=-1,perc=-1){//tier as goal tier, perc as 100 for 100%. Returns how much is required, how much you'd have, how much you'd lose, and the % of the loss versus original.
+	if(tier == -1)
+		tier = gamePage.religion.getTranscendenceLevel() + 1;
 	var tt=game.religion.getTranscendenceRatio(tier)-game.religion.getTranscendenceRatio(tier-1);
-	var before = Math.round(game.religion.getTriValueReligion(tt*perc/100)*100);
-	var after = Math.round(game.religion.getTriValueReligion(tt*(perc-100)/100)*100);
+	if(perc == -1)
+		perc = gamePage.religion.faithRatio / tt * 100;
+	var before = Math.round(gamePage.religion.getTriValueReligion(tt * perc / 100) * 100);
+	var after = Math.round(game.religion.getTriValueReligion(tt * (perc - 100) / 100) * 100);
 	var loss = Math.round(before - after);
-	var lossRatio = Math.round((100*loss/before)*1000)/1000;
-	var str = "Before: ";
-	var num = before.toString();
-	for(var i = num.length-3;i>0;i-=3){
-		num = num.substr(0,i) + "," + num.substr(i);
-	}
-	str += num;
+	var lossRatio = 100 * loss / before;
+	var str = "To tier: ";
+	str += tier;
+	str += "\n Progress: ";
+	str += makeNiceString(perc);
+	str += "%\n Before: ";
+	str += makeNiceString(before);
 	str += "%\n After: ";
-	num = after.toString();
-	for(var i = num.length-3;i>0;i-=3){
-		num = num.substr(0,i) + "," + num.substr(i);
-	}
-	str += num;
+	str += makeNiceString(after);
 	str += "%\n Loss: ";
-	num = loss.toString();
-	for(var i = num.length-3;i>0;i-=3){
-		num = num.substr(0,i) + "," + num.substr(i);
-	}
-	str += num;
+	str += makeNiceString(loss);
 	str += "%\n Loss ratio: ";
-	num = lossRatio.toString();
-	str += num;
+	str += makeNiceString(lossRatio);
 	str += "%";
 	return str;
 }

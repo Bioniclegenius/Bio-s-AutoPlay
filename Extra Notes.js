@@ -2,8 +2,8 @@ extraHook = function(){
 	goals.setGoal("oil",Math.floor(gamePage.resPool.get("oil").maxValue-7500));
 	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-250));
 	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-1000));
-	goals.setGoal("steamworks",goals.getGoal("magneto"));
-	//goals.setGoal("observatory",goals.getGoal("biolab"));
+	goals.setGoal("steamworks",goals.res["magneto"].val);
+	//goals.setGoal("observatory",goals.res["biolab"].val);
 	gamePage.bld.getBuildingExt("biolab").meta.on=0;
 	if(gamePage.calendar.festivalDays<=40000&&gamePage.resPool.get("manpower").value>=15000&&gamePage.resPool.get("culture").value>=50000&&gamePage.resPool.get("parchment").value>=25000){
 		var btn=gamePage.villageTab.festivalBtn;
@@ -15,11 +15,13 @@ extraHook = function(){
 		gamePage.space.getBuilding("entangler").on = gamePage.space.getBuilding("entangler").val;
 	else
 		gamePage.space.getBuilding("entangler").on = 0;
-	/*if(gamePage.resPool.get("titanium").value < gamePage.resPool.get("titanium").maxValue)
-		goals.setGoal("zebras6",-1);
-	else
-		goals.setGoal("zebras6",0);*/
+	if(getZebraTitaniumTrades() <= Math.floor(gamePage.resPool.get("manpower").maxValue / 50) && getZebraTitaniumTrades() >= 0)
+		goals.setGoal("zebras6",-1 * getZebraTitaniumTrades());
+	else if(goals.getGoal("zebras6")<0)
+		goals.setGoal("zebras6",0);
 	goals.setGoal("autoApoReset",parseInt(getReligionProductionBonusCap())-10);
+	if(gamePage.resPool.get("catnip").perTickCached <= 5)
+		autoClick(0,"bonfire");
 }
 
 makeNiceString = function(num){
@@ -160,6 +162,48 @@ getRelicTime = function(goal,log=false){//Time until enough relics for goal
 getMockParagon = function(ratio,cost){ // ratio is paragon boost% in decimal form by sephiroths, cost is how much the next one costs. % is given like .05 if you had Malkuth, a 5% bonus.
 	var result = 20 * cost * (1 + ratio) + cost;//cost of the sephirot, ratio is the ratio before buying it (like .05 if you had Malkuth already)
 	return result;
+	//Chart of results at bottom
+}
+
+getParagonProd = function(preRatio,cost,log = false){//gets paragon production percent tipping point before/after buying a sephirot
+	var step = Math.floor(cost / 2);
+	if(step == 0)
+		step = 1;
+	var curVal = cost;
+	var dir = 1;
+	var before;
+	var after;
+	while(step > 0){
+		before = gamePage.getHyperbolicEffect(curVal * .01 * (1 + preRatio), 1 + 2 * preRatio);
+		after = gamePage.getHyperbolicEffect((curVal - cost) * .01 * (1 + preRatio + .05), 1 + 2 * (preRatio + .05));
+		if(log)
+			console.log("Step: " + step + "\ncurVal: " + curVal + "\ndir: " + dir + "\nbefore: " + before + "\nafter: " + after);
+		if(after < before){
+			curVal += step;
+			if(dir == -1)
+				step = Math.floor(step / 2);
+			dir = 1;
+		}
+		else if(after > before){
+			curVal -= step;
+			if(dir == 1)
+				step = Math.floor(step / 2);
+			dir = -1;
+		}
+		else
+			step = 0;
+	}
+	before = gamePage.getHyperbolicEffect(curVal * .01 * (1 + preRatio), 1 + 2 * preRatio);
+	after = gamePage.getHyperbolicEffect((curVal - cost) * .01 * (1 + preRatio + .05), 1 + 2 * (preRatio + .05));
+	while(after < before){
+		curVal += 1;
+		before = gamePage.getHyperbolicEffect(curVal * .01 * (1 + preRatio), 1 + 2 * preRatio);
+		after = gamePage.getHyperbolicEffect((curVal - cost) * .01 * (1 + preRatio + .05), 1 + 2 * (preRatio + .05));
+		if(log)
+			console.log("Still under, stepping up.\ncurVal: " + curVal + "\nbefore: " + before + "\nafter: " + after);
+	}
+	return "Tipping point: " + curVal;
+	//Chart of results at bottom
 }
 
 getNecrocornTime = function(log=false){//true to also output necrocorns per second
@@ -316,6 +360,63 @@ getCelestialEventChance = function(){
 	var str = "Chance of celestial event per day: " + chance + "%\n ";
 	str += "Chance for auto-success of event: " + autoChance + "%";
 	return str;
+}
+
+getZebraTitaniumTrades = function(log = false){
+	var titaniumPerTrade = gamePage.resPool.get("ship").value / 100 * 1.5 * 2 + 1.5;
+	var maxTitanium = gamePage.resPool.get("titanium").maxValue;
+	if(maxTitanium == 0)
+		maxTitanium = Infinity;
+	if(log)
+		console.log("Titanium per Zebra trade: " + titaniumPerTrade);
+	var maxNumTrades = maxTitanium / titaniumPerTrade;
+	if(log)
+		console.log("Trades to fill titanium cap from zero: " + Math.ceil(maxNumTrades));
+	var numTrades = maxTitanium - gamePage.resPool.get("titanium").value;
+	numTrades /= titaniumPerTrade;
+	if(log)
+		console.log("Number of zebra trades to fill titanium: " + Math.ceil(numTrades));
+	return Math.ceil(numTrades);
+}
+
+getTCPerSacrifice = function(log = false){
+	var numTCPerSacrifice = 1;
+	numTCPerSacrifice += gamePage.getEffect("tcRefineRatio");
+	if(log){
+		console.log("TC from sacrifice all: " + (numTCPerSacrifice * Math.floor(gamePage.resPool.get("alicorn").value / 25)));
+	}
+	return numTCPerSacrifice;
+}
+
+//===========================================================================================
+//AutoXML
+//===========================================================================================
+
+makeAutoXml = function(log = false){
+	var techs = gamePage.science.techs;
+	var resultString = "";
+	for(var i in techs){
+		if(log)
+			console.log(techs[i].name);
+		if(i!=0)
+			resultString += "\n";
+		var thisTech = "";
+		thisTech += techs[i].name;
+		thisTech += "|" + techs[i].label;
+		thisTech += "*Prices"
+		for(var j in techs[i].prices)
+			thisTech += "|" + techs[i].prices[j].name + "-" + techs[i].prices[j].val;
+		thisTech += "&Children";
+		if(techs[i].unlocks){
+			if(techs[i].unlocks.tech){
+				thisTech += "*techs";
+				for(var j in techs[i].unlocks.tech)
+					thisTech += "|" + techs[i].unlocks.tech[j];
+			}
+		}
+		resultString += thisTech;
+	}
+	return resultString;
 }
 
 //===========================================================================================
@@ -509,7 +610,7 @@ gamePage.getHyperbolicEffect(75000,100); // Gets diminishing returns. Input actu
 //Autoshatter script for Xeno, unnecessary now - integrated with base script
 //===========================================================================================
 
-shatterAmount=0;
+shatterAmount=0;//This script is deprecated. It no longer works with the latest version.
 autoShatter = function(){
 	if(game.time.heat == 0 && game.resPool.get("timeCrystal").value>=1){
 		if(gamePage.timeTab.visible){
@@ -560,3 +661,34 @@ Upgrade to TT 20			Before			 After			Loss	   Ratio
  5000% matching		3,190,057,503%	3,157,995,810%	 32,061,693%	  1.005%
 
 10000% matching		4,511,422,588%	4,488,808,799%	 22,613,789%	  0.501%
+
+//===========================================================================================
+//Quick chart of paragon worth-it tipping points
+//===========================================================================================
+
+/*Tipping point means it's worth it for the given effect as soon as you have the listed
+amount.
+
+For instance, Malkuth's "Prod" is at 618. That means that if you buy Malkuth when you have
+618 paragon, your production will stay the same or go up. If you buy it before, it'll
+decrease, and if you buy it after, it'll increase more.
+
+Malkuth's "Storage" is at 10.5k. This means that your caps for resources will decrease if
+you buy Malkuth before you have 10.5k paragon, and it will increase if you buy it after
+10.5k. If you buy it with exactly 10.5k, it will stay the same.
+*/
+
+/-----------------------------------------------\
+| Sephirot	|	Cost	|	Prod	|	Storage	|
+| --------- | --------- | --------- | --------- |
+| Malkuth	|	500		|	618		|	10.5k	|
+| Yesod		|	750		|	880		|	16.5k	|
+| Hod		|	1250	|	1394	|	28.75k	|
+| Netzach	|	1750	|	1906	|	42k		|
+| Tiferet	|	2500	|	2669	|	62.5k	|
+| Gevurah	|	5000	|	5182	|	130k	|
+| Chesed	|	7500	|	7695	|	202.5k	|
+| Binah		|	15000	|	15209	|	420k	|
+| Chokhmah	|	30000	|	30221	|	870k	|
+| Keter		|	60000	|	60233	|	1.8M	|
+\-----------------------------------------------/

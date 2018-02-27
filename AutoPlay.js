@@ -40,7 +40,7 @@ autoPlay = function(){
 				if(maxTrade > Math.abs(goals.getGoal(i)) && goals.getGoal(i) < 0)
 					maxTrade = Math.abs(goals.getGoal(i));
                 gamePage.diplomacy.tradeMultiple(gamePage.diplomacy.get(goals.res[i].name),maxTrade);
-				if(goals.getGoal("log") != 0)
+				if(goals.getGoal("log") == 2)
 					console.log("Traded with "+gamePage.diplomacy.get(goals.res[i].name).title+" "+maxTrade+" time"+(maxTrade!=1?"s":"")+".");
             }
         }
@@ -102,14 +102,26 @@ autoPlay = function(){
 			}
         }
     }
+    if(gamePage.calendar.observeBtn)
+        gamePage.calendar.observeHandler();
+	manageJobs();
+}
+
+manageJobs = function(log = false){
 	var jobs = goals.getType("job");
+	for(var i = 0;i < jobs.length;i++)
+		if(!gamePage.village.getJob(jobs[i].name).unlocked){
+			jobs.splice(i,1);
+			i -= 1;
+		}
+	if(log)
+		console.log(jobs);
 	for(var i in jobs){
-		if(goals.getMaxGoal(jobs[i].name) - gamePage.village.getJob(goals.res[jobs[i].name].name).value < 0)
+		if(goals.getMaxGoal(jobs[i].name) - gamePage.village.getJob(goals.res[jobs[i].name].name).value < 0 && goals.res[jobs[i].name].val != -2)
 			gamePage.village.sim.removeJob(goals.res[jobs[i].name].name);
 	}
 	var freeKittens = gamePage.village.getFreeKittens();
 	if(freeKittens > 0){
-		jobs = goals.getType("job");
 		var maxdif = 1;
 		var chosenJob = [];
 		for(var i in jobs){
@@ -128,11 +140,11 @@ autoPlay = function(){
 			jobs = [];
 			for(var i in chosenJob)
 				jobs.push(chosenJob[i]);
-			var min = gamePage.village.getJob[goals.res[jobs[0]].name].value;
+			var min = gamePage.village.getJob(goals.res[jobs[0]].name).value;
 			chosenJob = jobs[0];
 			for(var i in jobs)
-				if(gamePage.village.getJob[goals.res[jobs[i]].name].value < min){
-					min = gamePage.village.getJob[goals.res[jobs[i]].name].value;
+				if(gamePage.village.getJob(goals.res[jobs[i]].name).value < min){
+					min = gamePage.village.getJob(goals.res[jobs[i]].name).value;
 					chosenJob = jobs[i];
 				}
 			gamePage.village.assignJob(goals.res[chosenJob]);
@@ -140,8 +152,6 @@ autoPlay = function(){
 		else if(chosenJob.length == 1)
 			gamePage.village.assignJob(goals.res[chosenJob[0]]);
 	}
-    if(gamePage.calendar.observeBtn)
-        gamePage.calendar.observeHandler();
 }
  
 roundThisNumber = function(num){
@@ -349,7 +359,7 @@ goals = {
                 name = name + "10";
             this.res[name] = {
                 name: gamePage.village.jobs[i].name,
-                val: -1,
+                val: -2,
                 type: "job"
             };
         }

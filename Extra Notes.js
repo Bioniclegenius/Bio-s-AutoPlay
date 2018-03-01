@@ -24,11 +24,11 @@ extraHook = function(){
 		autoClick(0,"bonfire");
 }
 
-makeNiceString = function(num){
-	num = num.toFixed(3);
+makeNiceString = function(num, numDigits = 3){
+	num = num.toFixed(numDigits);
 	num = num.toString();
 	var decimal = num.substr(num.indexOf("."));
-	if(decimal == ".000")
+	if(decimal == "." + Array(numDigits + 1).join("0"))
 		num = num.substr(0,num.indexOf("."));
 	for(var i = (num.indexOf(".") != -1 ? num.indexOf(".") - 3 : num.length - 3); i > 0; i -= 3)
 		num = num.substr(0,i) + "," + num.substr(i);
@@ -386,6 +386,119 @@ getTCPerSacrifice = function(log = false){
 		console.log("TC from sacrifice all: " + (numTCPerSacrifice * Math.floor(gamePage.resPool.get("alicorn").value / 25)));
 	}
 	return numTCPerSacrifice;
+}
+
+getParagonProductionBonus = function(amount = -1, burnedAmount = -1, numSephirots = -1){
+	var percentBoost = 1.0 + numSephirots * .05;
+	if(numSephirots == -1)
+		percentBoost = 1.0 + gamePage.getEffect("paragonRatio");
+	if(amount == -1)
+		amount = gamePage.resPool.get("paragon").value;
+	if(burnedAmount == -1)
+		burnedAmount = gamePage.resPool.get("burnedParagon").value;
+	
+	var darkFutureYears = gamePage.calendar.year - 40000;
+	
+	var productionRatioParagon = (amount * 0.010) * percentBoost;
+	productionRatioParagon = gamePage.getHyperbolicEffect(productionRatioParagon, 2 * percentBoost);
+
+	var ratio = darkFutureYears >= 0 ? 4 : 1;
+	var productionRatioBurnedParagon = burnedAmount * 0.010 * percentBoost;
+	productionRatioBurnedParagon = gamePage.getHyperbolicEffect(productionRatioBurnedParagon, ratio * percentBoost);
+
+	return 100 * (productionRatioParagon + productionRatioBurnedParagon);
+}
+
+generateTable = function(func, params, steps, numSteps){
+	if(func.name != this.name){
+		var STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
+		var ARGUMENT_NAMES = /([^\s,]+)/g;
+		var fnStr = func.toString().replace(STRIP_COMMENTS, '');
+		var result = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')')).match(ARGUMENT_NAMES);
+		if(result === null)
+			result = [];
+		
+		var vals = [];
+		for(var i in params)
+			vals[i] = params[i];
+		
+		result[result.length] = "Output";
+		
+		var finalized = [result];
+		
+		for(var i = 0; i <= numSteps; i++){
+			finalized[finalized.length] = [];
+			for(var j in vals)
+				finalized[finalized.length - 1][j] = vals[j];
+			var output = func.apply(this, vals);
+			finalized[finalized.length - 1][finalized[finalized.length - 1].length] = output;
+			for(var j in steps){
+				if(steps[j] && steps[j] != 0)
+					vals[j] += steps[j];
+			}
+		}
+		return finalized;
+	}
+}
+
+formatTable = function(table, headerNames = [], suffixes = [], wikiFormat = false){
+	var maxLengths = [];
+	for(var row in table){
+		for(var col in table[row]){
+			var length = 0;
+			if(headerNames[col] && row == 0)
+				table[row][col] = headerNames[col];
+			var data = table[row][col];
+			if(typeof(data) == "number")
+				data = makeNiceString(data);
+			data = data.toString();
+			if(suffixes[col] && row > 0)
+				data += suffixes[col];
+			length = data.length;
+			if(maxLengths[col]){
+				if(maxLengths[col] <= length)
+					maxLengths[col] = length + 1;
+			}
+			else
+				maxLengths[col] = length + 1;				
+		}
+	}
+	if(!wikiFormat){
+		var output = "/";
+		for(var i in maxLengths)
+			output += Array(maxLengths[i] + 2).join("-");
+		output = output.slice(0, -1) + "\\";
+		for(var row in table){
+			output += "\n |";
+			for(var col in table[row]){
+				var data = table[row][col];
+				if(typeof(data) == "number")
+					data = makeNiceString(data);
+				data = data.toString();
+				if(suffixes[col] && row > 0)
+					data += suffixes[col];
+				output += (Array(maxLengths[col] + 1).join(" ") + data).slice(-1 * maxLengths[col]) + "|";
+			}
+		}
+		output += "\n \\";
+		for(var i in maxLengths)
+			output += Array(maxLengths[i] + 2).join("-");
+		output = output.slice(0, -1) + "/";
+		return output;
+	}
+	var output = "";
+	for(var row in table){
+		if(output != "")
+			output += "\n";
+		output += "|";
+		for(var col in table[row]){
+			if(typeof(table[row][col]) == "number")
+				output += "r {{" + (Array(maxLengths[col] + 1).join(" ") + makeNiceString(table[row][col]) + (suffixes[col]? suffixes[col] : "")).slice(-1 * maxLengths[col]) + "}}|";
+			else
+				output += (Array(maxLengths[col] + 1 + 6).join(" ") + table[row][col]).slice(-1 * maxLengths[col] - 6) + "|";
+		}
+	}
+	return output;
 }
 
 //===========================================================================================

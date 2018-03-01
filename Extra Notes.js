@@ -410,7 +410,7 @@ getParagonProductionBonus = function(amount = -1, burnedAmount = -1, numSephirot
 }
 
 generateTable = function(func, params, steps, numSteps){
-	if(func.name != this.name){
+	if(func.name != arguments.callee.name){
 		var STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
 		var ARGUMENT_NAMES = /([^\s,]+)/g;
 		var fnStr = func.toString().replace(STRIP_COMMENTS, '');

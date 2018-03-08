@@ -82,20 +82,29 @@ autoPlay = function(){
 			}
 			if(goals.res[i].name=="autoShatter"){
 				if(goals.getGoal(i)!=0 && gamePage.time.heat == 0 && gamePage.resPool.get("timeCrystal").value >= 1){
-					if(gamePage.timeTab.visible){
+					var cycleName = gamePage.calendar.cycles[gamePage.calendar.cycle].name;
+					if(goals.res[cycleName] == undefined)
+						cycleName += "11";
+					var skipCycle = true;
+					if(goals.res[cycleName] != undefined)
+						skipCycle = (goals.getGoal(cycleName) != 0);
+					if(gamePage.timeTab.visible && skipCycle){
 						if(gamePage.timeTab.children[2].visible){
-							var btn=gamePage.timeTab.children[2].children[0].children[0];
+							var btn = gamePage.timeTab.children[2].children[0].children[0];
 							if(btn.model==undefined){
 								curTab=gamePage.ui.activeTabId;
 								gamePage.ui.activeTabId = "Time";
 								gamePage.ui.render();
 								gamePage.ui.activeTabId = curTab;
 								gamePage.ui.render();
+								btn = gamePage.timeTab.children[2].children[0].children[0];
 							}
-							if(goals.getGoal(i)==1)
-								btn.controller.buyItem(btn.model,1,callback=function(result){if(result)btn.update();});
-							else if(goals.getGoal(i)!=0)
-								btn.controller.doShatterX5(btn.model,1,callback=function(result){if(result)btn.update();});
+							if(btn.model != undefined){//Update this section with new shatter method
+								if(goals.getGoal(i)==1)
+									btn.controller.buyItem(btn.model,1,callback=function(result){if(result)btn.update();});
+								else if(goals.getGoal(i)!=0)
+									btn.controller.doShatterX5(btn.model,1,callback=function(result){if(result)btn.update();});
+							}
 						}
 					}
 				}
@@ -363,6 +372,16 @@ goals = {
                 type: "job"
             };
         }
+		for(var i in gamePage.calendar.cycles){
+			var name = gamePage.calendar.cycles[i].name;
+			if(this.res[name] != null)
+				name = name + "11";
+			this.res[name] = {
+				name: gamePage.calendar.cycles[i].name,
+				val: 1,
+				type: "cycle"
+			};
+		}
         this.res["feedLevi"] = {
             name: "feedLevi",
             val: 0,

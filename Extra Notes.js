@@ -1,7 +1,7 @@
 extraHook = function(){
-	goals.setGoal("oil",Math.floor(gamePage.resPool.get("oil").maxValue-7500));
-	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-250));
-	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-1000));
+	goals.setGoal("oil",Math.floor(gamePage.resPool.get("oil").maxValue-Math.max(7500,gamePage.resPool.get("oil").perTickCached)));
+	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-Math.max(250,gamePage.resPool.get("uranium").perTickCached)));
+	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-Math.max(1000,gamePage.resPool.get("unobtainium").perTickCached)));
 	goals.setGoal("steamworks",goals.res["magneto"].val);
 	//goals.setGoal("observatory",goals.res["biolab"].val);
 	gamePage.bld.getBuildingExt("biolab").meta.on=0;
@@ -25,13 +25,17 @@ extraHook = function(){
 }
 
 makeNiceString = function(num, numDigits = 3){
-	num = num.toFixed(numDigits);
-	num = num.toString();
-	var decimal = num.substr(num.indexOf("."));
-	if(decimal == "." + Array(numDigits + 1).join("0"))
-		num = num.substr(0,num.indexOf("."));
-	for(var i = (num.indexOf(".") != -1 ? num.indexOf(".") - 3 : num.length - 3); i > 0; i -= 3)
-		num = num.substr(0,i) + "," + num.substr(i);
+	if(typeof(num) == "number" && num != Infinity){
+		num = num.toFixed(numDigits);
+		num = num.toString();
+		var decimal = num.substr(num.indexOf("."));
+		if(decimal == "." + Array(numDigits + 1).join("0"))
+			num = num.substr(0,num.indexOf("."));
+		for(var i = (num.indexOf(".") != -1 ? num.indexOf(".") - 3 : num.length - 3); i > 0; i -= 3)
+			num = num.substr(0,i) + "," + num.substr(i);
+	}
+	else
+		num = num.toString();
 	return num;
 }
 
@@ -156,7 +160,8 @@ getRelicTime = function(goal,log=false){//Time until enough relics for goal
 	var secondsPerDay = 2;
 	if(log)//If you wanted to see relics per second
 		console.log("Relics per second income: " + (relicsPerDay / secondsPerDay));
-	return game.toDisplaySeconds((goal-current) / relicsPerDay * secondsPerDay);
+	var relicTime = Math.max((goal-current) / relicsPerDay * secondsPerDay, 0);
+	return game.toDisplaySeconds(relicTime);
 }
 
 getMockParagon = function(ratio,cost){ // ratio is paragon boost% in decimal form by sephiroths, cost is how much the next one costs. % is given like .05 if you had Malkuth, a 5% bonus.
@@ -232,11 +237,14 @@ getLeviChance = function(){//Odds of leviathans showing up per year
 getReligionProductionBonusCap = function(){
 	var transcendTier = gamePage.religion.getTranscendenceLevel();
 	var numObelisks = gamePage.religion.getTU("blackObelisk").val;
-	var result = 1000 * (transcendTier * numObelisks * .005 + 1);
+	var atheismBonus = 0;
+	if(gamePage.challenges.getChallenge("atheism").researched)
+		atheismBonus = gamePage.religion.getTranscendenceLevel() * 0.1;
+	var result = 1000 * (transcendTier * numObelisks * .005 + atheismBonus + 1);
 	return result + "%";
 }
 
-getPrices = function(bldName,bldType = undefined){
+getPrices = function(bldName,quantity = -1,bldType = undefined){
 	var prices = [];
 	var bld = undefined;
 	var type = bldType;
@@ -302,16 +310,23 @@ getPrices = function(bldName,bldType = undefined){
 			}
 	if(!bld || bldType == "building")//bonfire buildings
 		if(gamePage.bld.getBuildingExt(bldName)){
-			prices = gamePage.bld.getPricesWithAccessor(gamePage.bld.getBuildingExt(bldName));
+			/*prices = gamePage.bld.getPricesWithAccessor(gamePage.bld.getBuildingExt(bldName));
 			for(var i in prices)
 				prices[i].displayVal = gamePage.getDisplayValueExt(prices[i].val);
-			return prices;
+			return prices;*///Easy way, doesn't allow quantity
+			bld = gamePage.bld.getBuildingExt(bldName).meta;
+			type = "building";			
 		}
 	if(bld){
-		for (var i = 0; i< (bld.prices ? bld.prices.length : bld.buys.length); i++){
+		var ratio = bld.priceRatio || 1;
+		if(type == "building" && bld)//Exception for bonfire buildings, which have a different system for price ratio
+			ratio = gamePage.bld.getPriceRatio(bldName);
+		var amount = (quantity < 0 ? (bld.val || bld.value || 0) : quantity);
+		var bldPrices = (bld.prices ? bld.prices : bld.buys);
+		for (var i in bldPrices){
 			prices.push({
-				val: (bld.prices? bld.prices[i].val : bld.buys[i].val) * Math.pow(bld.priceRatio || 1, bld.val || bld.value || 0),
-				name: (bld.prices? bld.prices[i].name : bld.buys[i].name)
+				val: bldPrices[i].val * Math.pow(ratio, amount),
+				name: bldPrices[i].name
 			});
 		}
 	}
@@ -409,6 +424,93 @@ getParagonProductionBonus = function(amount = -1, burnedAmount = -1, numSephirot
 	return 100 * (productionRatioParagon + productionRatioBurnedParagon);
 }
 
+getParagonStorageBonus = function(amount = -1, burnedAmount = -1, numSephirots = -1){
+	var percentBoost = 1.0 + numSephirots * .05;
+	if(numSephirots == -1)
+		percentBoost = 1.0 + gamePage.getEffect("paragonRatio");
+	if(amount == -1)
+		amount = gamePage.resPool.get("paragon").value;
+	if(burnedAmount == -1)
+		burnedAmount = gamePage.resPool.get("burnedParagon").value;
+	var darkFutureYears = gamePage.calendar.year - 40000;
+	
+	var paragonRatio = percentBoost;
+	var storageRatio = (amount / 1000) * paragonRatio; //every 100 paragon will give a 10% bonus to the storage capacity
+	if (darkFutureYears >= 0) 
+		storageRatio += (burnedAmount / 500) * paragonRatio;
+	else
+		storageRatio += (burnedAmount / 2000) * paragonRatio;
+	return 100 * storageRatio;
+}
+
+getTradeAmountAvg = function(race,log = false){
+	var r = null;
+	try{
+		r = gamePage.diplomacy.get(race);
+	}
+	catch(e){
+	}
+	if(r){
+		var ratio = gamePage.diplomacy.getTradeRatio()+ 1;
+		var curSeason = gamePage.calendar.getCurSeason().name;
+		var sells = [];
+		for(var j in r.sells){
+			var s = r.sells[j];
+			var min = 0;
+			var max = 0;
+			if(r.name == "zebras" && s.name == "titanium"){
+				var ships = gamePage.resPool.get("ship").value;
+				var odds = Math.min(15 + ships * 0.35 , 100);
+				var amt = 1.5 * ((ships / 100) * 2 + 1);
+				min = amt;
+				max = amt;
+				sells[s.name] = amt;
+				if(log){
+					console.log(gamePage.resPool.get(s.name).title);
+					console.log("\tOdds: " + odds + "%");
+					console.log("\tMin amount: " + min);
+					console.log("\tMax amount: " + max);
+				}
+			}
+			else{
+				var sratio = s.seasons[curSeason];
+				var tratio = ratio;
+				if(r.name == "leviathans")
+					tratio *= (1 + 0.02 * r.energy);
+				var val = sratio * s.value * (1 - s.delta / 2);
+				max = val;
+				max += Math.floor(s.value * sratio * s.delta);
+				val *= tratio;
+				min = val;
+				max *= tratio;
+				var amt = (min + max) / 2;
+				amt *= s.chance / 100;
+				sells[s.name] = amt;
+				if(log){
+					console.log(gamePage.resPool.get(s.name).title);
+					console.log("\tOdds: " + s.chance + "%");
+					console.log("\tMin amount: " + min);
+					console.log("\tMax amount: " + max);
+				}
+			}
+		}
+		return sells;
+	}
+	return []
+}
+
+getBlazarsForShatterEngine = function(numRR = -1){
+	if(numRR < 0)
+		numRR = gamePage.time.getCFU("ressourceRetrieval").val;
+	var uoPerYear = game.getResourcePerTick("unobtainium", true) * ( 1 / game.calendar.dayPerTick * game.calendar.daysPerSeason * 4);
+	var tcPerTrade = getTradeAmountAvg("leviathans")["timeCrystal"];
+	var neededUO = 5000 / tcPerTrade;
+	var neededPerc = neededUO / uoPerYear;
+	var basePerc = numRR * .01;
+	var neededBlazars = Math.max(Math.ceil((neededPerc / basePerc - 1) / .02) , 0);
+	return neededBlazars;
+}
+
 generateTable = function(func, params, steps, numSteps){
 	if(func.name != arguments.callee.name){
 		var STRIP_COMMENTS = /(\/\/.*$)|(\/\*[\s\S]*?\*\/)|(\s*=[^,\)]*(('(?:\\'|[^'\r\n])*')|("(?:\\"|[^"\r\n])*"))|(\s*=[^,\)]*))/mg;
@@ -470,6 +572,11 @@ formatTable = function(table, headerNames = [], suffixes = [], wikiFormat = fals
 		output = output.slice(0, -1) + "\\";
 		for(var row in table){
 			output += "\n |";
+			if(row == 1){
+				for(var i in maxLengths)
+					output += Array(maxLengths[i] + 1).join("-") + "|";
+				output += "\n |";
+			}
 			for(var col in table[row]){
 				var data = table[row][col];
 				if(typeof(data) == "number")
@@ -720,31 +827,12 @@ gamePage.getHyperbolicEffect(75000,100); // Gets diminishing returns. Input actu
 1 + gamePage.getResCraftRatio({name:"blueprint"}); // Gets how many of resource are produced per individual craft
 
 //===========================================================================================
-//Autoshatter script for Xeno, unnecessary now - integrated with base script
+//Extra plain-text notes
 //===========================================================================================
 
-shatterAmount=0;//This script is deprecated. It no longer works with the latest version.
-autoShatter = function(){
-	if(game.time.heat == 0 && game.resPool.get("timeCrystal").value>=1){
-		if(gamePage.timeTab.visible){
-			if(gamePage.timeTab.children[2].visible){
-				var btn=gamePage.timeTab.children[2].children[0].children[0];
-				if(btn.model==undefined){
-					curTab=gamePage.ui.activeTabId;
-					gamePage.ui.activeTabId = "Time";
-					gamePage.ui.render();
-					gamePage.ui.activeTabId = curTab;
-					gamePage.ui.render();
-				}
-				if(shatterAmount==1)
-					btn.controller.buyItem(btn.model,1,callback=function(result){if(result)btn.update();});
-				else if(shatterAmount!=0)
-					btn.controller.doShatterX5(btn.model,1,callback=function(result){if(result)btn.update();});
-			}
-		}
-	}
-}
-gamePage.timer.addEvent(autoShatter,1);
+Time Crystals per sacrifice of 25 alicorns:
+	unicornUtopia.val * 0.05 + sunspire.val * 0.1 + 1 -> This should be everything that affects it. Could be added to in the future.
+	1 + game.getEffect("tcRefineRatio") -> This is how the game calculates it. This should equal the above number.
 
 //===========================================================================================
 //Quick chart of basic praise loss rates on transcending - ratio is consistent between tiers

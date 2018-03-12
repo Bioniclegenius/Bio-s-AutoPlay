@@ -81,7 +81,7 @@ autoPlay = function(){
 					gamePage.religion.praise();
 			}
 			if(goals.res[i].name=="autoShatter"){
-				if(goals.getGoal(i)!=0 && gamePage.time.heat == 0 && gamePage.resPool.get("timeCrystal").value >= 1){
+				if(goals.getGoal(i)!=0 && gamePage.time.heat == 0 && gamePage.resPool.get("timeCrystal").value >= goals.getGoal(i)){
 					var cycleName = gamePage.calendar.cycles[gamePage.calendar.cycle].name;
 					if(goals.res[cycleName] == undefined)
 						cycleName += "11";
@@ -99,12 +99,8 @@ autoPlay = function(){
 								gamePage.ui.render();
 								btn = gamePage.timeTab.children[2].children[0].children[0];
 							}
-							if(btn.model != undefined){//Update this section with new shatter method
-								if(goals.getGoal(i)==1)
-									btn.controller.buyItem(btn.model,1,callback=function(result){if(result)btn.update();});
-								else if(goals.getGoal(i)!=0)
-									btn.controller.doShatterX5(btn.model,1,callback=function(result){if(result)btn.update();});
-							}
+							if(btn.model != undefined)
+								btn.controller.doShatterAmt(btn.model,1,callback=function(result){if(result)btn.update();},goals.getGoal(i));
 						}
 					}
 				}

@@ -3,6 +3,7 @@ extraHook = function(){
 	goals.setGoal("uranium",Math.floor(gamePage.resPool.get("uranium").maxValue-Math.max(250,gamePage.resPool.get("uranium").perTickCached)));
 	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-Math.max(1000,gamePage.resPool.get("unobtainium").perTickCached)));
 	goals.setGoal("steamworks",goals.res["magneto"].val);
+	goals.setGoal("ziggurat",goals.res["magneto"].val);
 	//goals.setGoal("observatory",goals.res["biolab"].val);
 	gamePage.bld.getBuildingExt("biolab").meta.on=0;
 	if(gamePage.calendar.festivalDays<=40000&&gamePage.resPool.get("manpower").value>=15000&&gamePage.resPool.get("culture").value>=50000&&gamePage.resPool.get("parchment").value>=25000){
@@ -509,6 +510,35 @@ getBlazarsForShatterEngine = function(numRR = -1){
 	var basePerc = numRR * .01;
 	var neededBlazars = Math.max(Math.ceil((neededPerc / basePerc - 1) / .02) , 0);
 	return neededBlazars;
+}
+
+testTrade = function(race, numtrades = 1000){
+	min = {};
+	max = {};
+	race = gamePage.diplomacy.get(race);
+	if(race != null){
+		for(var i = 0; i < numtrades; i++){
+			tradeResults = gamePage.diplomacy.tradeInternal(race,true,null);
+			for(var j in tradeResults){
+				if(tradeResults[j] != 0){
+					if(min[j] == undefined)
+						min[j] = tradeResults[j];
+					if(min[j] > tradeResults[j])
+						min[j] = tradeResults[j];
+					if(max[j] == undefined)
+						max[j] = tradeResults[j];
+					if(max[j] < tradeResults[j])
+						max[j] = tradeResults[j];
+				}
+			}
+		}
+		gamePage.stats.getStat("totalTrades").val -= numtrades;
+		gamePage.stats.getStatCurrent("totalTrades").val -= numtrades;
+	}
+	var combined = {};
+	for(var i in min)
+		combined[i] = {min: min[i], max: max[i]};
+	return combined;
 }
 
 generateTable = function(func, params, steps, numSteps){

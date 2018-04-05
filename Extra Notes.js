@@ -4,6 +4,9 @@ extraHook = function(){
 	goals.setGoal("unobtainium",Math.floor(gamePage.resPool.get("unobtainium").maxValue-Math.max(1000,gamePage.resPool.get("unobtainium").perTickCached)));
 	goals.setGoal("steamworks",goals.res["magneto"].val);
 	goals.setGoal("ziggurat",goals.res["magneto"].val);
+	goals.res.parchment.manVal = 1000000000000000000;
+	goals.res.manuscript.manVal = goals.res.parchment.manVal;
+	goals.res.compedium.manVal = goals.res.parchment.manVal;
 	//goals.setGoal("observatory",goals.res["biolab"].val);
 	gamePage.bld.getBuildingExt("biolab").meta.on=0;
 	if(gamePage.calendar.festivalDays<=40000&&gamePage.resPool.get("manpower").value>=15000&&gamePage.resPool.get("culture").value>=50000&&gamePage.resPool.get("parchment").value>=25000){
@@ -16,8 +19,13 @@ extraHook = function(){
 		gamePage.space.getBuilding("entangler").on = gamePage.space.getBuilding("entangler").val;
 	else
 		gamePage.space.getBuilding("entangler").on = 0;
-	if(getZebraTitaniumTrades() <= Math.floor(gamePage.resPool.get("manpower").maxValue / 50) && getZebraTitaniumTrades() >= 0)
-		goals.setGoal("zebras6",-1 * getZebraTitaniumTrades());
+	if(getZebraTitaniumTrades() <= Math.floor(gamePage.resPool.get("manpower").maxValue / 50) && getZebraTitaniumTrades() >= 0){
+		var tit = gamePage.resPool.get("titanium");
+		if(tit.maxValue - tit.value >= 5 * tit.perTickCached)
+			goals.setGoal("zebras6",-1 * getZebraTitaniumTrades());
+		else
+			goals.setGoal("zebras6",0);
+	}
 	else if(goals.getGoal("zebras6")<0)
 		goals.setGoal("zebras6",0);
 	goals.setGoal("autoApoReset",parseInt(getReligionProductionBonusCap())-10);
@@ -539,6 +547,87 @@ testTrade = function(race, numtrades = 1000){
 	for(var i in min)
 		combined[i] = {min: min[i], max: max[i]};
 	return combined;
+}
+
+getRequiredResourcesAtReset = function(numChrono = -1, getScience = true, getWorkshop = true, log = 0){
+	chronospheres = gamePage.bld.getBuildingExt("chronosphere").meta.on;
+	var chronos = numChrono;
+	if(chronos < 0)
+		chronos = chronospheres;
+	if(chronos < 1)
+		chronos = 1;
+	if(log > 0){
+		if(chronos == chronospheres)
+			console.log("Using real number of chronospheres: " + chronos);
+		else if(chronos == numChrono)
+			console.log("Using hypothetical number of chronospheres: " + chronos);
+		else
+			console.log("Using default valid number of chronos: " + chronos);
+	}
+	var resources = {};
+	if(getScience){
+		if(log > 0)
+			console.log("Gathering science prices...");
+		var techs = gamePage.science.techs;
+		for(var i in techs){
+			var prices = techs[i].prices;
+			for(var j in prices){
+				if(resources[prices[j].name] == undefined)
+					resources[prices[j].name] = 0;
+				resources[prices[j].name] += prices[j].val;
+			}
+		}
+	}
+	if(getWorkshop){
+		if(log > 0)
+			console.log("Gathering workshop upgrade prices...");
+		var workshops = gamePage.workshop.meta[0].meta;
+		for(var i in workshops){
+			var prices = workshops[i].prices;
+			for(var j in prices){
+				if(resources[prices[j].name] == undefined)
+					resources[prices[j].name] = 0;
+				resources[prices[j].name] += prices[j].val;
+			}
+		}
+	}
+	if(log > 0)
+		console.log("Calculating chronosphere carryover...");
+	var anachronomancy = gamePage.prestige.getPerk("anachronomancy").researched;
+	var fluxCondensator = gamePage.workshop.get("fluxCondensator").researched;
+	var saveRatio = 0.015 * chronos;
+	if(!anachronomancy && log >= 0)
+		console.log("Warning: You need Anachronomancy to carry over time crystals!")
+	if(!fluxCondensator && log >= 0)
+		console.log("Warning: You need Flux Condensator to carry over crafted resources!");
+	var ignoreResources = ["kittens", "zebras", "unicorns", "alicorn", "tears", "furs", "ivory", "spice", "karma", "necrocorn", "gflops", "hashrates"];
+	var finalCount = {};
+	for(var i in resources){
+		var res = gamePage.resPool.get(i);
+		if(ignoreResources.indexOf(res.name) >= 0)
+			continue;
+		var value = 0;
+		if(res.name == "timeCrystal")
+			value = resources[i];
+		else if(res.persists)
+			value = resources[i];
+		else{
+			if(!res.craftable || res.name == "wood"){
+				value = resources[i] / saveRatio;
+				if(res.name == "void")
+					value = Math.ceil(value);
+			}
+			else
+				value = Math.pow(resources[i],2) / saveRatio / 100;
+		}
+		if(value > 0)
+			finalCount[res.title] = {"value": value,"displayValue": 0};
+	}
+	if(log > 0)
+		console.log("Calculating final display values...");
+	for(var i in finalCount)
+		finalCount[i].displayValue = gamePage.getDisplayValueExt(finalCount[i].value);
+	return finalCount;
 }
 
 generateTable = function(func, params, steps, numSteps){

@@ -549,7 +549,7 @@ testTrade = function(race, numtrades = 1000){
 	return combined;
 }
 
-getRequiredResourcesAtReset = function(numChrono = -1, getScience = true, getWorkshop = true, log = 0){
+getRequiredResourcesAtReset = function(numChrono = -1, getScience = true, getWorkshop = true, log = 0, displayNames = true){
 	chronospheres = gamePage.bld.getBuildingExt("chronosphere").meta.on;
 	var chronos = numChrono;
 	if(chronos < 0)
@@ -620,13 +620,30 @@ getRequiredResourcesAtReset = function(numChrono = -1, getScience = true, getWor
 			else
 				value = Math.pow(resources[i],2) / saveRatio / 100;
 		}
-		if(value > 0)
-			finalCount[res.title] = {"value": value,"displayValue": 0};
+		if(value > 0){
+			if(displayNames)
+				finalCount[res.title] = {"value": value,"displayValue": 0};
+			else
+				finalCount[res.name] = {"value": value,"displayValue": 0};
+		}
 	}
 	if(log > 0)
 		console.log("Calculating final display values...");
 	for(var i in finalCount)
 		finalCount[i].displayValue = gamePage.getDisplayValueExt(finalCount[i].value);
+	return finalCount;
+}
+
+getNotFinishedResourcesForReset = function(){
+	var needed = getRequiredResourcesAtReset(-1,true,true,-1,false);
+	var finalCount = {};
+	for(var i in needed){
+		var res = gamePage.resPool.get(i);
+		if(res.value < needed[i].value)
+			finalCount[res.title] = {"needed": (needed[i].value - res.value),"displayValue": 0,"have": res.value,"total": needed[i].value};
+	}
+	for(var i in finalCount)
+		finalCount[i].displayValue = gamePage.getDisplayValueExt(finalCount[i].needed);
 	return finalCount;
 }
 

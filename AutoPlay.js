@@ -66,8 +66,6 @@ autoPlay = function(){
 					var buildings=["unicornPasture","unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"]
 					for(var j in buildings)
 						goals.setGoal(buildings[j],0);
-											 
-							   
 					goals.setGoal(getBestUniBuilding(),-1);
 				}
 			}
@@ -75,9 +73,12 @@ autoPlay = function(){
 				if(autoFunc("manpower")&&goals.getGoal(i)!=0)
 					gamePage.village.huntAll();
 			if(goals.res[i].name=="autoPraise"){
-				if(goals.getGoal("autoApoReset")!=0&&gamePage.religion.getProductionBonus()>goals.getGoal("autoApoReset")&&autoFunc("faith"))
+				if(goals.getGoal("autoApoReset") != 0 && gamePage.religion.getProductionBonus() > goals.getGoal("autoApoReset") && autoFunc("faith")){
 					gamePage.religionTab.resetFaithInternal(1.01);
-				if(autoFunc("faith")&&goals.getGoal("autoPraise")!=0)
+					if(goals.getGoal("log") == 2)
+						console.log("Apocrypha faith resetting...");
+				}
+				if(autoFunc("faith") && goals.getGoal("autoPraise") != 0)
 					gamePage.religion.praise();
 			}
 			if(goals.res[i].name=="autoShatter"){
@@ -167,8 +168,16 @@ roundThisNumber = function(num){
     return num;
 }
  
+getButton = function(tab, buttonName){
+	for(var i in gamePage.tabs[tab].buttons){
+		if(gamePage.tabs[tab].buttons[i].opts.building == buttonName)
+			return parseInt(i);
+	}
+}
+
 getBestUniBuilding = function(log=false){
 	var validBuildings = ["unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"];
+	var pastureButton = getButton(0,"unicornPasture");
 	var unicornsPerSecond = gamePage.getEffect("unicornsPerTickBase") * gamePage.getRateUI();
 	var globalRatio = gamePage.getEffect("unicornsGlobalRatio")+1;
 	var religionRatio = gamePage.getEffect("unicornsRatioReligion")+1;
@@ -197,12 +206,12 @@ getBestUniBuilding = function(log=false){
 		console.log("unicornPasture");
 		console.log("\tBonus unicorns per second: "+pastureAmor);
 	}
-	pastureAmor = gamePage.tabs[0].buttons[32].model.prices[0].val / pastureAmor;
+	pastureAmor = gamePage.tabs[0].buttons[pastureButton].model.prices[0].val / pastureAmor;
 	if(log){
-		var baseWait = gamePage.tabs[0].buttons[32].model.prices[0].val / total;
-		var avgWait = gamePage.tabs[0].buttons[32].model.prices[0].val / (total + baseRift);
+		var baseWait = gamePage.tabs[0].buttons[pastureButton].model.prices[0].val / total;
+		var avgWait = gamePage.tabs[0].buttons[pastureButton].model.prices[0].val / (total + baseRift);
 		console.log("\tMaximum time to build: " + gamePage.toDisplaySeconds(baseWait) + " | Average time to build: " + gamePage.toDisplaySeconds(avgWait));
-		console.log("\tPrice: "+gamePage.tabs[0].buttons[32].model.prices[0].val+" | Amortization: "+gamePage.toDisplaySeconds(pastureAmor));
+		console.log("\tPrice: "+gamePage.tabs[0].buttons[pastureButton].model.prices[0].val+" | Amortization: "+gamePage.toDisplaySeconds(pastureAmor));
 	}
 	if(pastureAmor < bestAmoritization){
 		bestAmoritization = pastureAmor;
@@ -778,11 +787,11 @@ autoCraftMin = function(resource){
             gamePage.workshop.craft(resource,maxCount);
         }
     }
-    if(resource=="tears"){
-        if(gamePage.bld.getBuildingExt("ziggurat").meta.on>0){
-            var maxSacrifice=Math.floor(gamePage.resPool.get("unicorns").value/2500);
-            var neededSacrifice=Math.ceil((goals.getGoal("tears")-gamePage.resPool.get("tears").value)/gamePage.bld.getBuildingExt("ziggurat").meta.on)
-			if(neededSacrifice<=maxSacrifice)
+    if(resource == "tears"){
+        if(gamePage.bld.getBuildingExt("ziggurat").meta.on > 0){
+            var maxSacrifice = Math.floor(gamePage.resPool.get("unicorns").value/2500);
+            var neededSacrifice = Math.ceil((goals.getGoal("tears") - gamePage.resPool.get("tears").value) / gamePage.bld.getBuildingExt("ziggurat").meta.on)
+			if(neededSacrifice <= maxSacrifice && neededSacrifice > 0)
 				gamePage.religionTab.sacrificeBtn.controller.sacrifice(gamePage.religionTab.sacrificeBtn.model,neededSacrifice);
         }
     }
@@ -934,3 +943,16 @@ autoClick = function(buttonName,tabName="bonfire",goal=0){
 }
  
 gamePage.timer.addEvent(autoGame,1);
+© 2018 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Help
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+Press h to open a hovercard with more details.

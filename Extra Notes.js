@@ -31,6 +31,10 @@ extraHook = function(){
 	goals.setGoal("autoApoReset",parseInt(getReligionProductionBonusCap())-10);
 	if(gamePage.resPool.get("catnip").perTickCached <= 5)
 		autoClick(0,"bonfire");
+	if(gamePage.resPool.get("sorrow").value < gamePage.resPool.get("sorrow").maxValue)
+		goals.setGoal("leviathans",-1);
+	else
+		goals.setGoal("leviathans",0);
 }
 
 makeNiceString = function(num, numDigits = 3){
@@ -220,7 +224,7 @@ getParagonProd = function(preRatio,cost,log = false){//gets paragon production p
 	//Chart of results at bottom
 }
 
-getNecrocornTime = function(log=false){//true to also output necrocorns per second
+getNecrocornTime = function(log = false){//true to also output necrocorns per second
 	var numAlicorns = gamePage.resPool.get("alicorn").value;
 	var curCorruption = gamePage.religion.corruption;
 	var corruptionRate = 1;
@@ -236,18 +240,23 @@ getNecrocornTime = function(log=false){//true to also output necrocorns per seco
 	return gamePage.toDisplaySeconds( (1 + corruptionRate - curCorruption) / (corruptionRate * gamePage.getRateUI()) );
 }
 
-getLeviChance = function(){//Odds of leviathans showing up per year
+getLeviChance = function(log = false){//Odds of leviathans showing up per year
 	var numPyramids = gamePage.religion.getZU("blackPyramid").val;
 	var numMarkers = gamePage.religion.getZU("marker").val;
-	var chance = 35 * numPyramids * (1 + 0.1 * numMarkers) / 10;
+	var chance = roundThisNumber(35 * numPyramids * (1 + 0.1 * numMarkers) / 10);
+	if(log){
+		console.log("Number of markers: " + numMarkers + "\nSingle marker effect per pyramid: 1.1x\nTotal marker effect per pyramid: " + roundThisNumber((1 + 0.1 * numMarkers))
+			+ "x\nBase pyramid effect: 3.5%\nPyramid individual effect with markers: "
+			+ roundThisNumber(35 * (1 + 0.1 * numMarkers) / 10) + "%\nNumber of pyramids: " + numPyramids + "\nTotal chance: " + chance + "%");
+	}
 	return chance + "%";
 }
 
-getReligionProductionBonusCap = function(){
-	var transcendTier = gamePage.religion.getTranscendenceLevel();
-	var numObelisks = gamePage.religion.getTU("blackObelisk").val;
+getReligionProductionBonusCap = function(mockTT = -1, mockNumObe = -1, mockAeth = -1){
+	var transcendTier = (mockTT == -1 ? gamePage.religion.getTranscendenceLevel() : mockTT);
+	var numObelisks = (mockNumObe == -1 ? gamePage.religion.getTU("blackObelisk").val : mockNumObe);
 	var atheismBonus = 0;
-	if(gamePage.challenges.getChallenge("atheism").researched)
+	if((gamePage.challenges.getChallenge("atheism").researched || mockAeth == 1) && mockAeth != 0)
 		atheismBonus = gamePage.religion.getTranscendenceLevel() * 0.1;
 	var result = 1000 * (transcendTier * numObelisks * .005 + atheismBonus + 1);
 	return result + "%";
@@ -352,6 +361,21 @@ getPrices = function(bldName,quantity = -1,bldType = undefined){
 		prices.push({val: 15, name: "gold"});
 		for(var i in tempPrices)
 			prices.push(tempPrices[i]);
+	}
+	for(var i in prices)
+		prices[i].displayVal = gamePage.getDisplayValueExt(prices[i].val);
+	return prices;
+}
+
+getCumulativePrices = function(bldName, maxQuantity = 0, bldType = undefined){
+	var prices = getPrices(bldName, 0, bldType);
+	for(var i = 1; i < maxQuantity; i++){
+		var pricesTemp = getPrices(bldName, i, bldType);
+		for(var j in pricesTemp)
+			for(var k in prices){
+				if(prices[k].name == pricesTemp[j].name)
+					prices[k].val += pricesTemp[j].val;
+			}
 	}
 	for(var i in prices)
 		prices[i].displayVal = gamePage.getDisplayValueExt(prices[i].val);
@@ -1005,11 +1029,9 @@ Upgrade to TT 20			Before			 After			Loss	   Ratio
 
 /*Tipping point means it's worth it for the given effect as soon as you have the listed
 amount.
-
 For instance, Malkuth's "Prod" is at 618. That means that if you buy Malkuth when you have
 618 paragon, your production will stay the same or go up. If you buy it before, it'll
 decrease, and if you buy it after, it'll increase more.
-
 Malkuth's "Storage" is at 10.5k. This means that your caps for resources will decrease if
 you buy Malkuth before you have 10.5k paragon, and it will increase if you buy it after
 10.5k. If you buy it with exactly 10.5k, it will stay the same.

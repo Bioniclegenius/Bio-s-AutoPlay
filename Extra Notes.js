@@ -505,13 +505,15 @@ setCatnipArray = function(finalResult, theoreticalQuantity, actualQuantity, oper
         }
 }
 
-getCatnipInSeasons = function(log = false){
+getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers = -1, numberOfAqueducts = -1, numberOfHydroponics = -1, numberOfKittens = -1, numberOfPastures = -1, numberOfUnicPast = -1){
     var finalResult = {theoretical: {},
                        actual: {}};
     var catnip = gamePage.resPool.get("catnip");
     //Buildings
     var theoreticalCatnipPerTickBase = gamePage.bld.get("field").effects["catnipPerTickBase"];
     var numFields = gamePage.bld.get("field").on;
+    if(numberOfFields >= 0)
+        numFields = numberOfFields;
     var theoreticalCatnipPerTickTotal = theoreticalCatnipPerTickBase * numFields;
     var actualCatnipPerTickTotal = gamePage.getEffect("catnipPerTickBase");
     if(log)
@@ -546,11 +548,15 @@ getCatnipInSeasons = function(log = false){
         }
     }
     //Village job production
-    var theoreticalVillageProduction = 1 * gamePage.village.getJob("farmer").value;//1 catnip per tick per farmer
+    var numFarmers = gamePage.village.getJob("farmer").value;
+    if(numberOfFarmers >= 0)
+        numFarmers = numberOfFarmers;
+    var theoreticalVillageProduction = 1 * numFarmers;//1 catnip per tick per farmer
     var actualVillageProduction = gamePage.village.getResProduction()["catnip"] || 0;
     setCatnipArray(finalResult, theoreticalVillageProduction, actualVillageProduction, "+");
     if(log)
         console.log("---VILLAGE PRODUCTION (Adds to previous totals)---" +
+                  "\nNumber of farmers in village: " + numFarmers +
                   "\nCatnip produced by farmers in theory (1 per tick per farmer): " + theoreticalVillageProduction +
                   "\nActual catnip produced by farmers: " + actualVillageProduction);
     //Village job production workshop modifiers
@@ -566,22 +572,28 @@ getCatnipInSeasons = function(log = false){
     //=========================================================================================
     //Building and space production
     var aqueduct = gamePage.bld.get("aqueduct");
+    var numAqueduct = aqueduct.on;
+    if(numberOfAqueducts >= 0)
+        numAqueduct = numberOfAqueducts;
     var aqueductRatio = aqueduct.stages[aqueduct.stage].effects["catnipRatio"];
     var hydroponics = gamePage.space.getBuilding("hydroponics");
-    var theoreticalBuildingRatio = aqueductRatio * aqueduct.on;
-    theoreticalBuildingRatio += hydroponics.effects["catnipRatio"] * hydroponics.on;
+    var numHydroponics = hydroponics.on;
+    if(numberOfHydroponics >= 0)
+        numHydroponics = numberOfHydroponics;
+    var theoreticalBuildingRatio = aqueductRatio * numAqueduct;
+    theoreticalBuildingRatio += hydroponics.effects["catnipRatio"] * numHydroponics;
     theoreticalBuildingRatio += 1;
     var actualBuildingRatio = 1 + gamePage.getEffect("catnipRatio");
     setCatnipArray(finalResult, theoreticalBuildingRatio, actualBuildingRatio);
     if(log)
         console.log("---CATH AND SPACE PRODUCTION MULTIPLIERS---" +
-                  "\nNumber of Aqueducts: " + aqueduct.on +
+                  "\nNumber of Aqueducts: " + numAqueduct +
                   "\n-The following Aqueduct ratio will be zero if you've upgraded to Hydro Farms-" +
                   "\nMulitipler per Aqueduct: " + aqueductRatio +
-                  "\nTotal multiplier from Aqueducts: " + (aqueductRatio * aqueduct.on) +
-                  "\nNumber of Hydroponics (space): " + hydroponics.on +
+                  "\nTotal multiplier from Aqueducts: " + (aqueductRatio * numAqueduct) +
+                  "\nNumber of Hydroponics (space): " + numHydroponics +
                   "\nMultiplier per Hydroponics: " + hydroponics.effects["catnipRatio"] +
-                  "\nTotal multiplier from Hydroponics: " + (hydroponics.effects["catnipRatio"] * hydroponics.on) +
+                  "\nTotal multiplier from Hydroponics: " + (hydroponics.effects["catnipRatio"] * numHydroponics) +
                   "\nFinal theoretical building ratio: x" + theoreticalBuildingRatio +
                   "\nActual building ratio: x" + actualBuildingRatio);
     //Religion modifiers - doesn't do anything right now. Skipping.
@@ -646,16 +658,25 @@ getCatnipInSeasons = function(log = false){
     //=========================================================================================
     //Consumption
     //Theoretical
-    var theoreticalCatnipConsumption = -0.85 * gamePage.village.sim.kittens.length;
+    var numKittens = gamePage.village.sim.kittens.length;
+    if(numberOfKittens >= -1)
+        numKittens = numberOfKittens;
+    var theoreticalCatnipConsumption = -0.85 * numKittens;
     var pastures = gamePage.bld.get("pasture");
+    var numPastures = pastures.on;
+    if(numberOfPastures >= 0)
+        numPastures = numberOfPastures;
     var unicPastures = gamePage.bld.get("unicornPasture");
-    var theoreticalCatnipConsReduction = pastures.effects["catnipDemandRatio"] * pastures.on;
-    theoreticalCatnipConsReduction += unicPastures.effects["catnipDemandRatio"] * unicPastures.on;
+    var numUnicPastures = unicPastures.on;
+    if(numberOfUnicPast >= 0)
+        numUnicPastures = numberOfUnicPast;
+    var theoreticalCatnipConsReduction = pastures.effects["catnipDemandRatio"] * numPastures;
+    theoreticalCatnipConsReduction += unicPastures.effects["catnipDemandRatio"] * numUnicPastures;
     theoreticalCatnipConsReduction = gamePage.getHyperbolicEffect(theoreticalCatnipConsReduction, 1);
     var theoreticalReducedCatnipConsReduction = theoreticalCatnipConsReduction;
     theoreticalCatnipConsumption *= 1 + theoreticalCatnipConsReduction
     var theoreticalHappinessModifier = 0;
-    if(gamePage.village.sim.kittens.length > 0 && gamePage.village.happiness > 1){
+    if(numKittens > 0 && gamePage.village.happiness > 1){
         var theoreticalHappinessConsumption = Math.max(gamePage.village.happiness - 1, 0);
         var theoreticalWorkerRatio = 1 + (gamePage.workshop.get("assistance").researched ? -0.25 : 0);
         if(gamePage.challenges.currentChallenge == "anarchy")
@@ -664,14 +685,14 @@ getCatnipInSeasons = function(log = false){
         else
             theoreticalHappinessModifier = theoreticalCatnipConsumption * theoreticalHappinessConsumption *
                                        theoreticalWorkerRatio *
-                                       (1 - gamePage.village.getFreeKittens() / gamePage.village.sim.kittens.length);
+                                       (1 - gamePage.village.getFreeKittens() / numKittens);
     }
     theoreticalCatnipConsumption += theoreticalHappinessModifier;
     //Actual
     var actualCatnipConsumption = gamePage.village.getResConsumption()["catnip"] || 0;
     actualCatnipConsumption *= 1 + gamePage.getEffect("catnipDemandRatio");
     var actualHappinessModifier = 0;
-    if(gamePage.village.sim.kittens.length > 0 && gamePage.village.happiness > 1){
+    if(numKittens > 0 && gamePage.village.happiness > 1){
         var actualHappinessConsumption = Math.max(gamePage.village.happiness - 1, 0);
         if(gamePage.challenges.currentChallenge == "anarchy")
             actualHappinessModifier = actualCatnipConsumption * actualHappinessConsumption *
@@ -679,27 +700,27 @@ getCatnipInSeasons = function(log = false){
         else
             actualHappinessModifier = actualCatnipConsumption * actualHappinessConsumption *
                                        (1 + gamePage.getEffect("catnipDemandWorkerRatioGlobal")) *
-                                       (1 - gamePage.village.getFreeKittens() / gamePage.village.sim.kittens.length);
+                                       (1 - gamePage.village.getFreeKittens() / numKittens);
     }
     actualCatnipConsumption += actualHappinessModifier;
     setCatnipArray(finalResult, theoreticalCatnipConsumption, actualCatnipConsumption, "+");
     if(log)
         console.log("---VILLAGE KITTEN CONSUMPTION (Adds to previous total)---" +
-                  "\nNumber of kittens: " + gamePage.village.sim.kittens.length +
+                  "\nNumber of kittens: " + numKittens +
                   "\nTheoretical demand per kitten per tick: " + (-0.85) +
-                  "\nTotal initial theoretical demand: " + (-0.85 * gamePage.village.sim.kittens.length) +
+                  "\nTotal initial theoretical demand: " + (-0.85 * numKittens) +
                   "\nTotal initial actual demand: " + (gamePage.village.getResConsumption()["catnip"] || 0) +
-                  "\nNumber of Pastures: " + pastures.on +
+                  "\nNumber of Pastures: " + numPastures +
                   "\n-The following Pasture ratio will be zero if you've upgraded to Solar Farms-" +
                   "\nReduction ratio per Pasture: " + pastures.effects["catnipDemandRatio"] +
-                  "\nTotal preliminary reduction ratio for Pastures: " + (pastures.effects["catnipDemandRatio"] * pastures.on) +
-                  "\nNumber of Unicorn Pastures: " + unicPastures.on +
+                  "\nTotal preliminary reduction ratio for Pastures: " + (pastures.effects["catnipDemandRatio"] * numPastures) +
+                  "\nNumber of Unicorn Pastures: " + numUnicPastures +
                   "\nReduction ratio per Unicorn Pasture: " + unicPastures.effects["catnipDemandRatio"] +
-                  "\nTotal preliminary reduction ratio for Unicorn Pastures: " + (unicPastures.effects["catnipDemandRatio"] * unicPastures.on) +
-                  "\nTotal preiliminary reduction ratio: " + (pastures.effects["catnipDemandRatio"] * pastures.on + unicPastures.effects["catnipDemandRatio"] * unicPastures.on) +
+                  "\nTotal preliminary reduction ratio for Unicorn Pastures: " + (unicPastures.effects["catnipDemandRatio"] * numUnicPastures) +
+                  "\nTotal preliminary reduction ratio: " + (pastures.effects["catnipDemandRatio"] * numPastures + unicPastures.effects["catnipDemandRatio"] * numUnicPastures) +
                   "\nFinal reduction ratio, after diminishing returns: " + theoreticalReducedCatnipConsReduction +
                   "\nActual reduction ratio after diminishing returns: " + gamePage.getEffect("catnipDemandRatio") +
-                  "\nTheoretical catnip consumption after reduction ratio: " + ((1 + theoreticalReducedCatnipConsReduction) * (-0.85 * gamePage.village.sim.kittens.length)) +
+                  "\nTheoretical catnip consumption after reduction ratio: " + ((1 + theoreticalReducedCatnipConsReduction) * (-0.85 * numKittens)) +
                   "\nActual catnip consumption after reduction ratio: " + ((gamePage.village.getResConsumption()["catnip"] || 0) * (1 + gamePage.getEffect("catnipDemandRatio"))) +
                   "\n===HAPPINESS IMPACT===" +
                   "\n    Happiness level: " + (100 * gamePage.village.happiness) + "%" +

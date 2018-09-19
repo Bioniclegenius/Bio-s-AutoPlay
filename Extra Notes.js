@@ -29,12 +29,8 @@ extraHook = function(){
 	else if(goals.getGoal("zebras6")<0)
 		goals.setGoal("zebras6",0);
 	goals.setGoal("autoApoReset",parseInt(getReligionProductionBonusCap())-10);
-	if(gamePage.resPool.get("catnip").perTickCached <= 5)
-		autoClick(0,"bonfire");
-	if(gamePage.resPool.get("sorrow").value < gamePage.resPool.get("sorrow").maxValue)
-		goals.setGoal("leviathans",-1);
-	else
-		goals.setGoal("leviathans",0);
+	//if(gamePage.resPool.get("catnip").perTickCached <= 5)
+		//autoClick(0,"bonfire");// - this has an issue, needs resolving
 }
 
 makeNiceString = function(num, numDigits = 3){
@@ -436,6 +432,296 @@ getTCPerSacrifice = function(log = false){
 	return numTCPerSacrifice;
 }
 
+getRelicPerTCRefine = function(log = false, numBlackNexus = -1, numBlackPyramids = -1){
+    if(numBlackNexus == -1)
+        numBlackNexus = gamePage.religion.getTU("blackNexus").on;
+    var rrrPerBN = gamePage.religion.getTU("blackNexus").effects["relicRefineRatio"];
+    if(numBlackPyramids == -1)
+        numBlackPyramids = gamePage.religion.getZU("blackPyramid").val;
+    var numRelics = 1 + (rrrPerBN * numBlackNexus) * numBlackPyramids;
+    var prices;
+    for(var i in gamePage.tabs)
+        if(gamePage.tabs[i].tabName.toLowerCase() == "religion")
+            prices = gamePage.tabs[i].refineTCBtn.model.prices;
+    var maxPurchase = -1;
+    for(var i in prices){
+        var quantity = Math.floor(gamePage.resPool.get(prices[i].name).value / prices[i].val);
+        if(quantity < maxPurchase || maxPurchase == -1)
+            maxPurchase = quantity;
+    }
+    var maxRelics = numRelics * maxPurchase;
+    var numRelicsWithBPPlus = 1 + (rrrPerBN * numBlackNexus) * (numBlackPyramids + 1);
+    var maxRelicsWithBPPlus = numRelicsWithBPPlus * maxPurchase;
+    var numRelicsWithBNPlus = 1 + ((rrrPerBN * numBlackNexus) + rrrPerBN) * numBlackPyramids;
+    var maxRelicsWithBNPlus = numRelicsWithBNPlus * maxPurchase;
+    if(log)
+        console.log("Number of Black Pyramids: " + numBlackPyramids +
+                  "\nNumber of Black Nexus: " + numBlackNexus +
+                  "\nRelic refine ratio increase per Black Nexus: " + (100 * rrrPerBN) + "%" +
+                  "\nRelics per refine: " + numRelics +
+                  "\nRelics from Refine All: " + maxRelics +
+                  "\nRelics per refine with one more Black Pyramid: " + numRelicsWithBPPlus +
+                  "\nRelics from Refine All with one more Black Pyramid: " + maxRelicsWithBPPlus +
+                  "\nRelics per refine with one more Black Nexus: " + numRelicsWithBNPlus +
+                  "\nRelics from Refine All with one more Black Nexus: " + maxRelicsWithBNPlus);
+    //Actual formula used in the game below - if this differs from above, there's a factor missing
+    //If the game's formula shifts (unlikely), then this will have to be revisited. So would above anyways.
+    return 1 + this.game.getEffect("relicRefineRatio") * this.game.religion.getZU("blackPyramid").val;
+}
+
+setCatnipArray = function(finalResult, theoreticalQuantity, actualQuantity, operation = "*"){
+    actualQuantity = actualQuantity || theoreticalQuantity;
+    for(var season in finalResult["theoretical"])
+        for(var weather in finalResult["theoretical"][season]){
+            switch(operation){
+                case "+":
+                    finalResult["theoretical"][season][weather] += theoreticalQuantity;
+                    break;
+                case "-":
+                    finalResult["theoretical"][season][weather] -= theoreticalQuantity;
+                    break;
+                case "/":
+                    finalResult["theoretical"][season][weather] /= theoreticalQuantity;
+                    break;
+                default:
+                    finalResult["theoretical"][season][weather] *= theoreticalQuantity;
+            }
+        }
+    for(var season in finalResult["actual"])
+        for(var weather in finalResult["actual"][season]){
+            switch(operation){
+                case "+":
+                    finalResult["actual"][season][weather] += actualQuantity;
+                    break;
+                case "-":
+                    finalResult["actual"][season][weather] -= actualQuantity;
+                    break;
+                case "/":
+                    finalResult["actual"][season][weather] /= actualQuantity;
+                    break;
+                default:
+                    finalResult["actual"][season][weather] *= actualQuantity;
+            }
+        }
+}
+
+getCatnipInSeasons = function(log = false){
+    var finalResult = {theoretical: {},
+                       actual: {}};
+    var catnip = gamePage.resPool.get("catnip");
+    //Buildings
+    var theoreticalCatnipPerTickBase = gamePage.bld.get("field").effects["catnipPerTickBase"];
+    var numFields = gamePage.bld.get("field").on;
+    var theoreticalCatnipPerTickTotal = theoreticalCatnipPerTickBase * numFields;
+    var actualCatnipPerTickTotal = gamePage.getEffect("catnipPerTickBase");
+    if(log)
+        console.log("---INITIAL CATH BUILDING PRODUCTION---" +
+                  "\nCatnip per field per tick: " + theoreticalCatnipPerTickBase +
+                  "\nNumber of fields: " + numFields +
+                  "\nTotal theoretical catnip from fields per tick: " + theoreticalCatnipPerTickTotal +
+                  "\nActual catnip from fields per tick: " + actualCatnipPerTickTotal);
+    //Space ratio - does nothing. Skipping.
+    //=========================================================================================
+    //Add space catnip to normal - does nothing. Skipping.
+    //=========================================================================================
+    //Weather effects
+    if(log)
+        console.log("---SETTING UP SEASONS AND WEATHER---");
+    var weather = {normal: 0,
+                   warm: 0.15,
+                   cold: -0.15};
+    var seasons = gamePage.calendar.seasons;
+    for(var i in seasons){
+        finalResult["theoretical"][seasons[i].name] = {};
+        finalResult["actual"][seasons[i].name] = {};
+        for(var j in weather){
+            finalResult["theoretical"][seasons[i].name][j] = (seasons[i].modifiers["catnip"] || 1) + weather[j];
+            if(finalResult["theoretical"][seasons[i].name][j] < -0.95)
+                finalResult["theoretical"][seasons[i].name][j] = -0.95;
+            finalResult["theoretical"][seasons[i].name][j] *= theoreticalCatnipPerTickTotal;
+            finalResult["actual"][seasons[i].name][j] = (seasons[i].modifiers["catnip"] || 1) + weather[j];
+            if(finalResult["actual"][seasons[i].name][j] < -0.95)
+                finalResult["actual"][seasons[i].name][j] = -0.95;
+            finalResult["actual"][seasons[i].name][j] *= actualCatnipPerTickTotal;
+        }
+    }
+    //Village job production
+    var theoreticalVillageProduction = 1 * gamePage.village.getJob("farmer").value;//1 catnip per tick per farmer
+    var actualVillageProduction = gamePage.village.getResProduction()["catnip"] || 0;
+    setCatnipArray(finalResult, theoreticalVillageProduction, actualVillageProduction, "+");
+    if(log)
+        console.log("---VILLAGE PRODUCTION (Adds to previous totals)---" +
+                  "\nCatnip produced by farmers in theory (1 per tick per farmer): " + theoreticalVillageProduction +
+                  "\nActual catnip produced by farmers: " + actualVillageProduction);
+    //Village job production workshop modifiers
+    var workshopJobModifier = gamePage.getEffect("catnipJobRatio");
+    setCatnipArray(finalResult, theoreticalVillageProduction * workshopJobModifier,
+                                actualVillageProduction * workshopJobModifier, "+");
+    if(log)
+        console.log("---VILLAGE PRODUCTION BONUS (Adds to previous totals)---" +
+                  "\nModifier from workshop: " + workshopJobModifier +
+                  "\nTheoretical bonus: " + (theoreticalVillageProduction * workshopJobModifier) +
+                  "\nActual bonus: " + (actualVillageProduction * workshopJobModifier));
+    //Production boost - doesn't do anything right now. Skipping.
+    //=========================================================================================
+    //Building and space production
+    var aqueduct = gamePage.bld.get("aqueduct");
+    var aqueductRatio = aqueduct.stages[aqueduct.stage].effects["catnipRatio"];
+    var hydroponics = gamePage.space.getBuilding("hydroponics");
+    var theoreticalBuildingRatio = aqueductRatio * aqueduct.on;
+    theoreticalBuildingRatio += hydroponics.effects["catnipRatio"] * hydroponics.on;
+    theoreticalBuildingRatio += 1;
+    var actualBuildingRatio = 1 + gamePage.getEffect("catnipRatio");
+    setCatnipArray(finalResult, theoreticalBuildingRatio, actualBuildingRatio);
+    if(log)
+        console.log("---CATH AND SPACE PRODUCTION MULTIPLIERS---" +
+                  "\nNumber of Aqueducts: " + aqueduct.on +
+                  "\n-The following Aqueduct ratio will be zero if you've upgraded to Hydro Farms-" +
+                  "\nMulitipler per Aqueduct: " + aqueductRatio +
+                  "\nTotal multiplier from Aqueducts: " + (aqueductRatio * aqueduct.on) +
+                  "\nNumber of Hydroponics (space): " + hydroponics.on +
+                  "\nMultiplier per Hydroponics: " + hydroponics.effects["catnipRatio"] +
+                  "\nTotal multiplier from Hydroponics: " + (hydroponics.effects["catnipRatio"] * hydroponics.on) +
+                  "\nFinal theoretical building ratio: x" + theoreticalBuildingRatio +
+                  "\nActual building ratio: x" + actualBuildingRatio);
+    //Religion modifiers - doesn't do anything right now. Skipping.
+    //=========================================================================================
+    //...Super Ratio? Doesn't seem to have anything for it. Skipping.
+    //=========================================================================================
+    //This would be steamworks here, but in the base it's a hack to only affect coal - skipping
+    //=========================================================================================
+    //Paragon bonus
+    var paragonProd = 1 + gamePage.prestige.getParagonProductionRatio();
+    if(gamePage.challenges.currentChallenge == "winterIsComing")//If we're in this challenge - after challenge rework,
+        paragonProd = 0;                                        //it will need to be reworked
+    setCatnipArray(finalResult, paragonProd);
+    if(log)
+        console.log("---PARAGON MULTIPLIER---" +
+                  "\nParagon production ratio: " + (100 + 100 * paragonProd) + "%");
+    //Paragon... Space production? Does nothing for catnip. Skipping.
+    //=========================================================================================
+    //Magnetos Boost - specifically does not affect catnip. Skipping.
+    //=========================================================================================
+    //Reactor production bonus - specifically does not affect catnip. Skipping.
+    //=========================================================================================
+    //SR Faith bonus
+    var srBonus = 1 + gamePage.religion.getProductionBonus() / 100;
+    setCatnipArray(finalResult, srBonus);
+    if(log)
+        console.log("---SOLAR REVOLUTION MULTIPLIER---" +
+                  "\nSolar Revolution bonus: " + (100 * srBonus) + "%");
+    //Cosmic radiation, most people will probably have this disabled
+    if(!gamePage.opts.disableCMBR){
+        setCatnipArray(finalResult,1 + gamePage.getCMBRBonus());
+        if(log)
+            console.log("---COSMIC RADIATION BONUS (offline progression)---" +
+                      "\nCosmic Radiation Bonus Ratio: " + (100 + 100 * gamePage.getCMBRBonus()) + "%");
+    }
+    //Last section of paragon space production - does nothing. Skipping.
+    //=========================================================================================
+    //Automated production building (catnipPerTickProd) - does nothing. Skipping.
+    //=========================================================================================
+    //Automated space production, full bonus - does nothing. Skipping.
+    //=========================================================================================
+    //Cycle effects - set in space buildings, none of which produce catnip themselves
+    //=========================================================================================
+    //Cycle festival effects
+    for(var season in finalResult["theoretical"])
+        for(var weather in finalResult["theoretical"][season]){
+            var tempEffect = {catnip: finalResult["theoretical"][season][weather]};
+            gamePage.calendar.cycleEffectsFestival(tempEffect);
+            finalResult["theoretical"][season][weather] = tempEffect["catnip"];
+        }
+    for(var season in finalResult["actual"])
+        for(var weather in finalResult["actual"][season]){
+            var tempEffect = {catnip: finalResult["actual"][season][weather]};
+            gamePage.calendar.cycleEffectsFestival(tempEffect);
+            finalResult["actual"][season][weather] = tempEffect["catnip"];
+        }
+    if(log)
+        console.log("---CYCLE FESTIVAL EFFECTS---" +
+                  "\nCharon is *1.5 to catnip. All others do nothing." +
+                  "\nAre we in Charon right now? " + (gamePage.calendar.cycle == 0 ? "Yes" : "No"));
+    //Building and space pertick - does nothing. Skipping.
+    //=========================================================================================
+    //Consumption
+    //Theoretical
+    var theoreticalCatnipConsumption = -0.85 * gamePage.village.sim.kittens.length;
+    var pastures = gamePage.bld.get("pasture");
+    var unicPastures = gamePage.bld.get("unicornPasture");
+    var theoreticalCatnipConsReduction = pastures.effects["catnipDemandRatio"] * pastures.on;
+    theoreticalCatnipConsReduction += unicPastures.effects["catnipDemandRatio"] * unicPastures.on;
+    theoreticalCatnipConsReduction = gamePage.getHyperbolicEffect(theoreticalCatnipConsReduction, 1);
+    var theoreticalReducedCatnipConsReduction = theoreticalCatnipConsReduction;
+    theoreticalCatnipConsumption *= 1 + theoreticalCatnipConsReduction
+    var theoreticalHappinessModifier = 0;
+    if(gamePage.village.sim.kittens.length > 0 && gamePage.village.happiness > 1){
+        var theoreticalHappinessConsumption = Math.max(gamePage.village.happiness - 1, 0);
+        var theoreticalWorkerRatio = 1 + (gamePage.workshop.get("assistance").researched ? -0.25 : 0);
+        if(gamePage.challenges.currentChallenge == "anarchy")
+            theoreticalHappinessModifier = theoreticalCatnipConsumption * theoreticalHappinessConsumption *
+                                       theoreticalWorkerRatio;
+        else
+            theoreticalHappinessModifier = theoreticalCatnipConsumption * theoreticalHappinessConsumption *
+                                       theoreticalWorkerRatio *
+                                       (1 - gamePage.village.getFreeKittens() / gamePage.village.sim.kittens.length);
+    }
+    theoreticalCatnipConsumption += theoreticalHappinessModifier;
+    //Actual
+    var actualCatnipConsumption = gamePage.village.getResConsumption()["catnip"] || 0;
+    actualCatnipConsumption *= 1 + gamePage.getEffect("catnipDemandRatio");
+    var actualHappinessModifier = 0;
+    if(gamePage.village.sim.kittens.length > 0 && gamePage.village.happiness > 1){
+        var actualHappinessConsumption = Math.max(gamePage.village.happiness - 1, 0);
+        if(gamePage.challenges.currentChallenge == "anarchy")
+            actualHappinessModifier = actualCatnipConsumption * actualHappinessConsumption *
+                                       (1 + gamePage.getEffect("catnipDemandWorkerRatioGlobal"));
+        else
+            actualHappinessModifier = actualCatnipConsumption * actualHappinessConsumption *
+                                       (1 + gamePage.getEffect("catnipDemandWorkerRatioGlobal")) *
+                                       (1 - gamePage.village.getFreeKittens() / gamePage.village.sim.kittens.length);
+    }
+    actualCatnipConsumption += actualHappinessModifier;
+    setCatnipArray(finalResult, theoreticalCatnipConsumption, actualCatnipConsumption, "+");
+    if(log)
+        console.log("---VILLAGE KITTEN CONSUMPTION (Adds to previous total)---" +
+                  "\nNumber of kittens: " + gamePage.village.sim.kittens.length +
+                  "\nTheoretical demand per kitten per tick: " + (-0.85) +
+                  "\nTotal initial theoretical demand: " + (-0.85 * gamePage.village.sim.kittens.length) +
+                  "\nTotal initial actual demand: " + (gamePage.village.getResConsumption()["catnip"] || 0) +
+                  "\nNumber of Pastures: " + pastures.on +
+                  "\n-The following Pasture ratio will be zero if you've upgraded to Solar Farms-" +
+                  "\nReduction ratio per Pasture: " + pastures.effects["catnipDemandRatio"] +
+                  "\nTotal preliminary reduction ratio for Pastures: " + (pastures.effects["catnipDemandRatio"] * pastures.on) +
+                  "\nNumber of Unicorn Pastures: " + unicPastures.on +
+                  "\nReduction ratio per Unicorn Pasture: " + unicPastures.effects["catnipDemandRatio"] +
+                  "\nTotal preliminary reduction ratio for Unicorn Pastures: " + (unicPastures.effects["catnipDemandRatio"] * unicPastures.on) +
+                  "\nTotal preiliminary reduction ratio: " + (pastures.effects["catnipDemandRatio"] * pastures.on + unicPastures.effects["catnipDemandRatio"] * unicPastures.on) +
+                  "\nFinal reduction ratio, after diminishing returns: " + theoreticalReducedCatnipConsReduction +
+                  "\nActual reduction ratio after diminishing returns: " + gamePage.getEffect("catnipDemandRatio") +
+                  "\nTheoretical catnip consumption after reduction ratio: " + ((1 + theoreticalReducedCatnipConsReduction) * (-0.85 * gamePage.village.sim.kittens.length)) +
+                  "\nActual catnip consumption after reduction ratio: " + ((gamePage.village.getResConsumption()["catnip"] || 0) * (1 + gamePage.getEffect("catnipDemandRatio"))) +
+                  "\n===HAPPINESS IMPACT===" +
+                  "\n    Happiness level: " + (100 * gamePage.village.happiness) + "%" +
+                  "\n    Are we in the Anarchy challenge? " + (gamePage.challenges.currentChallenge == "anarchy" ? "Yes" : "No") +
+                  "\n    Have we researched Robotic Assistance (-25% to happiness demand if so)? " + (gamePage.workshop.get("assistance").researched ? "Yes" : "No") +
+                  "\n    Final theoretical happiness extra consumption: " + theoreticalHappinessModifier +
+                  "\n    Final actual happiness consumption: " + actualHappinessModifier +
+                  "\nFinal theoretical catnip consumption: " + theoreticalCatnipConsumption +
+                  "\nFinal actual catnip consumption: " + actualCatnipConsumption);
+    //Adjust from Per Tick to Per Second
+    setCatnipArray(finalResult, gamePage.getRateUI());
+    var currentWeather = gamePage.calendar.weather;
+    if(currentWeather == null)
+        currentWeather = "normal";
+    if(log)
+        console.log("---CONVERSION FROM TICKS TO SECONDS---" +
+                  "\nNumber of ticks per second: " + gamePage.getRateUI() +
+                  "\nCurrent Catnip per second: " + finalResult["actual"][gamePage.calendar.seasons[gamePage.calendar.season].name][currentWeather]);
+    //Final result return
+    return finalResult;
+}
+
 getParagonProductionBonus = function(amount = -1, burnedAmount = -1, numSephirots = -1){
 	var percentBoost = 1.0 + numSephirots * .05;
 	if(numSephirots == -1)
@@ -562,6 +848,33 @@ testTrade = function(race, numtrades = 1000){
 					if(max[j] < tradeResults[j])
 						max[j] = tradeResults[j];
 				}
+			}
+		}
+		gamePage.stats.getStat("totalTrades").val -= numtrades;
+		gamePage.stats.getStatCurrent("totalTrades").val -= numtrades;
+	}
+	var combined = {};
+	for(var i in min)
+		combined[i] = {min: min[i], max: max[i]};
+	return combined;
+}
+
+testTradeMultiple = function(race, numtrades = 1000){
+	min = {};
+	max = {};
+	race = gamePage.diplomacy.get(race);
+	if(race != null){
+		tradeResults = gamePage.diplomacy.tradeMultiple(race,true,null);
+		for(var j in tradeResults){
+			if(tradeResults[j] != 0){
+				if(min[j] == undefined)
+					min[j] = tradeResults[j];
+				if(min[j] > tradeResults[j])
+					min[j] = tradeResults[j];
+				if(max[j] == undefined)
+					max[j] = tradeResults[j];
+				if(max[j] < tradeResults[j])
+					max[j] = tradeResults[j];
 			}
 		}
 		gamePage.stats.getStat("totalTrades").val -= numtrades;

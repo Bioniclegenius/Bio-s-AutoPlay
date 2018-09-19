@@ -943,16 +943,3 @@ autoClick = function(buttonName,tabName="bonfire",goal=0){
 }
  
 gamePage.timer.addEvent(autoGame,1);
-© 2018 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Help
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-Press h to open a hovercard with more details.

@@ -575,7 +575,7 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
     var numAqueduct = aqueduct.on;
     if(numberOfAqueducts >= 0)
         numAqueduct = numberOfAqueducts;
-    var aqueductRatio = aqueduct.stages[aqueduct.stage].effects["catnipRatio"];
+    var aqueductRatio = aqueduct.stages[aqueduct.stage].effects["catnipRatio"] || 0;
     var hydroponics = gamePage.space.getBuilding("hydroponics");
     var numHydroponics = hydroponics.on;
     if(numberOfHydroponics >= 0)
@@ -659,7 +659,7 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
     //Consumption
     //Theoretical
     var numKittens = gamePage.village.sim.kittens.length;
-    if(numberOfKittens >= -1)
+    if(numberOfKittens >= 0)
         numKittens = numberOfKittens;
     var theoreticalCatnipConsumption = -0.85 * numKittens;
     var pastures = gamePage.bld.get("pasture");

@@ -738,8 +738,19 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
     if(log)
         console.log("---CONVERSION FROM TICKS TO SECONDS---" +
                   "\nNumber of ticks per second: " + gamePage.getRateUI() +
-                  "\nCurrent Catnip per second: " + finalResult["actual"][gamePage.calendar.seasons[gamePage.calendar.season].name][currentWeather]);
+                  "\nCurrent Catnip per second: " + finalResult["actual"][gamePage.calendar.seasons[gamePage.calendar.season].name][currentWeather] +
+                  "\nCatnip per second at cold winter: " + finalResult["actual"]["winter"]["cold"]);
+    var theoreticalMatches = true;
+    for(var season in finalResult["actual"])
+        for(var weather in finalResult["actual"][season])
+            if(finalResult["theoretical"][season][weather] != finalResult["actual"][season][weather])
+                theoreticalMatches = false;
+    if(log)
+        console.log("---FINAL SANITY CHECK---" +
+                  "\nDoes the theoretical result match the actual result? " + (theoreticalMatches ? "Yes" : "No"));
     //Final result return
+    if(theoreticalMatches)
+        return finalResult["actual"];
     return finalResult;
 }
 

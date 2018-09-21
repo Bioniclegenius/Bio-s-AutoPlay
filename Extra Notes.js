@@ -652,7 +652,7 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
         }
     if(log)
         console.log("---CYCLE FESTIVAL EFFECTS---" +
-                  "\nCharon is *1.5 to catnip. All others do nothing." +
+                  "\nCharon is x1.5 to catnip. All others do nothing." +
                   "\nAre we in Charon right now? " + (gamePage.calendar.cycle == 0 ? "Yes" : "No"));
     //Building and space pertick - does nothing. Skipping.
     //=========================================================================================
@@ -735,10 +735,12 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
     var currentWeather = gamePage.calendar.weather;
     if(currentWeather == null)
         currentWeather = "normal";
+    var currentActual = finalResult["actual"][gamePage.calendar.seasons[gamePage.calendar.season].name][currentWeather];
     if(log)
         console.log("---CONVERSION FROM TICKS TO SECONDS---" +
                   "\nNumber of ticks per second: " + gamePage.getRateUI() +
-                  "\nCurrent Catnip per second: " + finalResult["actual"][gamePage.calendar.seasons[gamePage.calendar.season].name][currentWeather] +
+                  "\nCurrent predicted actual catnip per second: " + currentActual +
+                  "\nCurrent actual catnip per second: " + (catnip.perTickCached * gamePage.getRateUI()) +
                   "\nCatnip per second at cold winter: " + finalResult["actual"]["winter"]["cold"]);
     var theoreticalMatches = true;
     for(var season in finalResult["actual"])
@@ -746,8 +748,10 @@ getCatnipInSeasons = function(log = false, numberOfFields = -1, numberOfFarmers 
             if(finalResult["theoretical"][season][weather] != finalResult["actual"][season][weather])
                 theoreticalMatches = false;
     if(log)
-        console.log("---FINAL SANITY CHECK---" +
-                  "\nDoes the theoretical result match the actual result? " + (theoreticalMatches ? "Yes" : "No"));
+        console.log("---FINAL SANITY CHECKS---" +
+                  "\nDoes the theoretical result match the actual predicted result? " + (theoreticalMatches ? "Yes" : "No") +
+                  "\nDoes the actual predicted result match reality? " + (currentActual == (catnip.perTickCached * gamePage.getRateUI()) ? "Yes" : "No") + 
+                  "\nDoes the actual predicted result closely match reality? " + ((Math.floor(currentActual * 10 + .5) == Math.floor(catnip.perTickCached * gamePage.getRateUI() * 10 + .5)) ? "Yes" : "No"));
     //Final result return
     if(theoreticalMatches)
         return finalResult["actual"];

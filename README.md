@@ -1,6 +1,15 @@
 # Bio-s-AutoPlay
 Autoplay script for Kitten Game, located over at http://bloodrizer.ru/games/kittens
 
+Bookmark way:
+
+Add a bookmark. Name it "Bio's Autoplay" or some such. Make the URL for it the following:
+    javascript:(function(){var%20d=document,s=d.createElement('script');s.src=' javascript:(function(){var%20d=document,s=d.createElement('script');s.src='https://rawgit.com/MaPaul1977/KittensGame/master/ScriptKitties.js';d.body.appendChild(s)';d.body.appendChild(s)
+     
+Click bookmark. Presto!
+
+Alternative method to manually import code:
+
 Open up AutoPlay.js. Copy all the text.
 
 On the Kitten Game tab, open your javascript console - in Chrome, it's ctrl+shift+j. Google around how to do it in other browsers.

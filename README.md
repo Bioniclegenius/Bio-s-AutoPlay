@@ -5,7 +5,7 @@ Bookmark way:
 
 Add a bookmark. Name it "Bio's Autoplay" or some such. Make the URL for it the following:
 
-	javascript:(function(){var%20d=document,s=d.createElement('script');s.src='javascript:(function(){var%20d=document,s=d.createElement('script');s.src='https://raw.githubusercontent.com/Bioniclegenius/Bio-s-AutoPlay/master/AutoPlay.js';d.body.appendChild(s)';d.body.appendChild(s)
+	javascript:(function(){var%20d=document,s=d.createElement('script');s.src='javascript:(function(){var%20d=document,s=d.createElement('script');s.src='https://cdn.jsdelivr.net/gh/Bioniclegenius/Bio-s-AutoPlay/AutoPlay.js';d.body.appendChild(s)';d.body.appendChild(s)
      
 Click bookmark. Presto!
 

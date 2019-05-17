@@ -4,7 +4,7 @@ Autoplay script for Kitten Game, located over at http://bloodrizer.ru/games/kitt
 Bookmark way:
 
 Add a bookmark. Name it "Bio's Autoplay" or some such. Make the URL for it the following:
-    javascript:(function(){var%20d=document,s=d.createElement('script');s.src=' javascript:(function(){var%20d=document,s=d.createElement('script');s.src='https://rawgit.com/MaPaul1977/KittensGame/master/ScriptKitties.js';d.body.appendChild(s)';d.body.appendChild(s)
+	javascript:(function(){var%20d=document,s=d.createElement('script');s.src=' javascript:(function(){var%20d=document,s=d.createElement('script');s.src='https://rawgit.com/MaPaul1977/KittensGame/master/ScriptKitties.js';d.body.appendChild(s)';d.body.appendChild(s)
      
 Click bookmark. Presto!
 

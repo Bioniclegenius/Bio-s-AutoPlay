@@ -792,7 +792,7 @@ autoCraftMin = function(resource){
             var maxSacrifice = Math.floor(gamePage.resPool.get("unicorns").value/2500);
             var neededSacrifice = Math.ceil((goals.getGoal("tears") - gamePage.resPool.get("tears").value) / gamePage.bld.getBuildingExt("ziggurat").meta.on)
 			if(neededSacrifice <= maxSacrifice && neededSacrifice > 0)
-				gamePage.religionTab.sacrificeBtn.controller.sacrifice(gamePage.religionTab.sacrificeBtn.model,neededSacrifice);
+				gamePage.religionTab.sacrificeBtn.controller._transform(gamePage.religionTab.sacrificeBtn.model,neededSacrifice);
         }
     }
 }

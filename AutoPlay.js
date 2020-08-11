@@ -73,7 +73,7 @@ autoPlay = function(){
 				if(autoFunc("manpower")&&goals.getGoal(i)!=0)
 					gamePage.village.huntAll();
 			if(goals.res[i].name=="autoPraise"){
-				if(goals.getGoal("autoApoReset") != 0 && gamePage.religion.getProductionBonus() > goals.getGoal("autoApoReset") && autoFunc("faith")){
+				if(goals.getGoal("autoApoReset") != 0 && (gamePage.religion.getSolarRevolutionRatio()*100) > goals.getGoal("autoApoReset") && autoFunc("faith")){
 					gamePage.religionTab.resetFaithInternal(1.01);
 					if(goals.getGoal("log") == 2)
 						console.log("Apocrypha faith resetting...");
@@ -182,7 +182,7 @@ getBestUniBuilding = function(log=false){
 	var globalRatio = gamePage.getEffect("unicornsGlobalRatio")+1;
 	var religionRatio = gamePage.getEffect("unicornsRatioReligion")+1;
 	var paragonRatio = gamePage.prestige.getParagonProductionRatio()+1;
-	var faithBonus = gamePage.religion.getProductionBonus()/100+1;
+	var faithBonus = gamePage.religion.getSolarRevolutionRatio()+1;
 	var cycle = 1;
 	if(gamePage.calendar.cycles[gamePage.calendar.cycle].festivalEffects["unicorns"]!=undefined)
 		if(gamePage.prestige.getPerk("numeromancy").researched && gamePage.calendar.festivalDays)

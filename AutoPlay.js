@@ -667,7 +667,7 @@ goals = {
                         var prices=gamePage.space.getBuilding(this.res[i].name).prices;
                         if(prices!=null){
                             var priceRatio=gamePage.space.getBuilding(this.res[i].name).priceRatio;
-                            var reductionRatio = game.getHyperbolicEffect(game.getEffect("oilReductionRatio"), 0.75);
+                            var reductionRatio = game.getLimitedDR(game.getEffect("oilReductionRatio"), 0.75);
                             var num=gamePage.space.getBuilding(this.res[i].name).val;
                             for(var j in prices){
                                 var price={

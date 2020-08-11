@@ -178,7 +178,7 @@ getButton = function(tab, buttonName){
 getBestUniBuilding = function(log=false){
 	var validBuildings = ["unicornTomb","ivoryTower","ivoryCitadel","skyPalace","unicornUtopia","sunspire"];
 	var pastureButton = getButton(0,"unicornPasture");
-	var unicornsPerSecond = gamePage.getEffect("unicornsPerTickBase") * gamePage.getRateUI();
+	var unicornsPerSecond = gamePage.getEffect("unicornsPerTickBase") * this.game.getTicksPerSecondUI();
 	var globalRatio = gamePage.getEffect("unicornsGlobalRatio")+1;
 	var religionRatio = gamePage.getEffect("unicornsRatioReligion")+1;
 	var paragonRatio = gamePage.prestige.getParagonProductionRatio()+1;
@@ -200,7 +200,7 @@ getBestUniBuilding = function(log=false){
 	}
 	var bestAmoritization = Infinity;
 	var bestBuilding = "";
-	var pastureAmor = gamePage.bld.getBuildingExt("unicornPasture").meta.effects["unicornsPerTickBase"] * gamePage.getRateUI();
+	var pastureAmor = gamePage.bld.getBuildingExt("unicornPasture").meta.effects["unicornsPerTickBase"] * this.game.getTicksPerSecondUI();
 	pastureAmor = pastureAmor * globalRatio * religionRatio * paragonRatio * faithBonus * cycle;
 	if(log){
 		console.log("unicornPasture");

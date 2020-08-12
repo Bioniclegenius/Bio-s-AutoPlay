@@ -74,7 +74,7 @@ autoPlay = function(){
 					gamePage.village.huntAll();
 			if(goals.res[i].name=="autoPraise"){
 				if(goals.getGoal("autoApoReset") != 0 && (gamePage.religion.getSolarRevolutionRatio()*100) > goals.getGoal("autoApoReset") && autoFunc("faith")){
-					gamePage.religionTab.resetFaithInternal(1.01);
+					gamePage.religion._resetFaithInternal(1.01);
 					if(goals.getGoal("log") == 2)
 						console.log("Apocrypha faith resetting...");
 				}
